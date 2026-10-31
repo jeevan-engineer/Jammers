@@ -1,10 +1,20 @@
+import Products from "./Products.jsx";
+import Invoices from "./Invoices.jsx";
+import Customers from "./Customers.jsx";
+import Taxes from "./Taxes.jsx";
+import Payments from "./Payments.jsx";
+import Discounts from "./Discounts.jsx";
+import Auth from "./Auth.jsx";
 
+import Users from "./Users.jsx";
+import Plans from "./Plans.jsx";
+import Subscriptions from "./Subscriptions.jsx";
 import { useState } from "react";
 import {
   LayoutDashboard,
   Package,
   Layers,
-  Users,
+  Users as UsersIcon,
   Repeat,
   FileText,
   CreditCard,
@@ -46,7 +56,7 @@ const navigation = [
     title: "MANAGEMENT", items: [
       { label: "Products", icon: Package },
       { label: "Plans", icon: Layers },
-      { label: "Customers", icon: Users },
+      { label: "Customers", icon: UsersIcon },
       { label: "Subscriptions", icon: Repeat },
       { label: "Invoices", icon: FileText },
       { label: "Payments", icon: CreditCard },
@@ -242,9 +252,16 @@ function PlaceholderPage({ title }) {
   );
 }
 
+
 function App() {
   const [activePage, setActivePage] = useState("Dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  // Show Login/Register page before opening the dashboard
+  if (!isAuthenticated) {
+    return <Auth onAuthenticated={() => setIsAuthenticated(true)} />;
+  }
 
   return (
     <div className="app-shell">
@@ -260,16 +277,24 @@ function App() {
           <button className="mobile-menu" onClick={() => setSidebarOpen(true)}>
             <Menu size={21} />
           </button>
+
           <div className="topbar-search">
             <Search size={17} />
             <input placeholder="Search anything..." />
             <kbd>⌘ K</kbd>
           </div>
+
           <div className="topbar-right">
-            <button className="icon-button"><Bell size={19} /></button>
+            <button className="icon-button">
+              <Bell size={19} />
+            </button>
+
             <div className="topbar-user">
               <div className="profile-avatar">JN</div>
-              <div><strong>Administrator</strong><small>Admin</small></div>
+              <div>
+                <strong>Administrator</strong>
+                <small>Admin</small>
+              </div>
             </div>
           </div>
         </header>
@@ -277,9 +302,28 @@ function App() {
         <div className="page-container">
           {activePage === "Dashboard" ? (
             <Dashboard />
+          ) : activePage === "Customers" ? (
+            <Customers />
+          ) : activePage === "Products" ? (
+            <Products />
+          ) : activePage === "Plans" ? (
+            <Plans />
+          ) : activePage === "Subscriptions" ? (
+            <Subscriptions />
+          ) : activePage === "Invoices" ? (
+            <Invoices />
+          ) : activePage === "Payments" ? (
+            <Payments />
+          ) : activePage === "Taxes" ? (
+            <Taxes />
+          ) : activePage === "Discounts" ? (
+            <Discounts />
+          ) : activePage === "Users" ? (
+            <Users />
           ) : (
             <PlaceholderPage title={activePage} />
           )}
+
           <footer>© 2026 Brightloop Software. All rights reserved.</footer>
         </div>
       </main>
