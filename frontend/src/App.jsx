@@ -7,11 +7,12 @@ import Discounts from "./Discounts.jsx";
 import Auth from "./Auth.jsx";
 import StaffApp from "./StaffApp.jsx";
 import CustomerApp from "./CustomerApp.jsx";
+import api, { getStoredRole, clearSession } from "./api/axios";
 
 import Users from "./Users.jsx";
 import Plans from "./Plans.jsx";
 import Subscriptions from "./Subscriptions.jsx";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   LayoutDashboard,
   Package,
@@ -202,6 +203,43 @@ function StatCard({ item }) {
 }
 
 function Dashboard() {
+  const [report, setReport] = useState(null);
+
+  useEffect(() => {
+    api.get("/v1/reports/dashboard")
+      .then((res) => setReport(res.data))
+      .catch(() => {}); // fail silently — shows "—" on error
+  }, []);
+
+  const fmt = (n) =>
+    n == null ? "—" : n >= 1000 ? `₹${(n / 1000).toFixed(1)}k` : `₹${n.toFixed(2)}`;
+
+  const liveStats = [
+    {
+      label: "Active Subscriptions",
+      value: report ? String(report.activeSubscriptions) : "—",
+      icon: Repeat,
+      note: report ? `${report.totalSubscriptions} total` : "Awaiting API data",
+    },
+    {
+      label: "Revenue Collected",
+      value: report ? fmt(report.totalRevenue) : "—",
+      icon: Wallet,
+      note: `MRR: ${report ? fmt(report.monthlyRecurringRevenue) : "—"}`,
+    },
+    {
+      label: "Outstanding Amount",
+      value: report ? fmt(report.amountOwed) : "—",
+      icon: CircleAlert,
+      note: report ? `${report.unpaidInvoices} unpaid invoices` : "Awaiting API data",
+    },
+    {
+      label: "Overdue Invoices",
+      value: report ? String(report.overdueInvoices) : "—",
+      icon: FileText,
+      note: report ? `${report.totalInvoices} total invoices` : "Awaiting API data",
+    },
+  ];
   return (
     <>
       <div className="page-heading">
@@ -216,7 +254,7 @@ function Dashboard() {
       </div>
 
       <div className="stats-grid">
-        {stats.map((item) => <StatCard key={item.label} item={item} />)}
+        {liveStats.map((item) => <StatCard key={item.label} item={item} />)}
       </div>
 
       <div className="dashboard-grid">
@@ -245,10 +283,10 @@ function Dashboard() {
               <p>Current recurring revenue</p>
             </div>
           </div>
-          <div className="mrr-value">—</div>
+          <div className="mrr-value">{report ? fmt(report.monthlyRecurringRevenue) : "—"}</div>
           <div className="empty-message">
             <Wallet size={23} />
-            <span>Waiting for subscription analytics API.</span>
+            <span>{report ? `${report.activeSubscriptions} active subscriptions contributing to MRR` : "Waiting for subscription analytics API."}</span>
           </div>
         </section>
       </div>
@@ -302,24 +340,27 @@ function PlaceholderPage({ title }) {
 function App() {
   const [activePage,       setActivePage]       = useState("Dashboard");
   const [sidebarOpen,      setSidebarOpen]      = useState(false);
-  const [userRole,         setUserRole]         = useState(null); // null | "admin" | "staff" | "customer"
+  // Restore session from localStorage on page refresh
+  const [userRole,         setUserRole]         = useState(() => getStoredRole());
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
+  const handleLogout = () => {
+    clearSession();
+    setUserRole(null);
+  };
+
   // ── Auth gate ────────────────────────────────────────────────────────────
-  // onAuthenticated(role) is called by Auth — either from the demo buttons
-  // or (later) from a real backend response.  Replace the demo wiring with
-  // an API call that returns the user's actual role.
   if (!userRole) {
     return <Auth onAuthenticated={(role) => setUserRole(role)} />;
   }
 
   // ── Role-based routing ───────────────────────────────────────────────────
   if (userRole === "staff") {
-    return <StaffApp onLogout={() => setUserRole(null)} />;
+    return <StaffApp onLogout={handleLogout} />;
   }
 
   if (userRole === "customer") {
-    return <CustomerApp onLogout={() => setUserRole(null)} />;
+    return <CustomerApp onLogout={handleLogout} />;
   }
 
   // ── Administrator dashboard (existing) ───────────────────────────────────
@@ -366,7 +407,7 @@ function App() {
 
             <button
               className="icon-button admin-topbar-logout"
-              onClick={() => setUserRole(null)}
+              onClick={handleLogout}
               title="Sign out"
             >
               <LogOut size={19} />

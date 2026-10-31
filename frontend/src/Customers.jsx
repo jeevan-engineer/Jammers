@@ -1,33 +1,66 @@
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Search, Plus, Users, X } from "lucide-react";
+import api from "./api/axios";
 
 export default function Customers() {
   const [customers, setCustomers] = useState([]);
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     name: "",
     email: "",
     phone: "",
+    companyName: "",
+    address: "",
   });
 
+  const fetchCustomers = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await api.get("/customers");
+      setCustomers(response.data.content ?? []);
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to load customers.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchCustomers();
+  }, [fetchCustomers]);
+
   const filteredCustomers = customers.filter((customer) =>
-    `${customer.name} ${customer.email} ${customer.phone}`
+    `${customer.name} ${customer.email} ${customer.phone ?? ""} ${customer.companyName ?? ""}`
       .toLowerCase()
       .includes(search.toLowerCase())
   );
 
-  function addCustomer(event) {
+  async function addCustomer(event) {
     event.preventDefault();
-
-    setCustomers((previous) => [
-      ...previous,
-      { ...form, id: Date.now() },
-    ]);
-
-    setForm({ name: "", email: "", phone: "" });
-    setShowForm(false);
+    setSaving(true);
+    setError(null);
+    try {
+      await api.post("/customers", {
+        name: form.name,
+        email: form.email,
+        phone: form.phone,
+        companyName: form.companyName,
+        address: form.address,
+      });
+      setForm({ name: "", email: "", phone: "", companyName: "", address: "" });
+      setShowForm(false);
+      await fetchCustomers();
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to save customer.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -48,6 +81,15 @@ export default function Customers() {
           <Plus size={17} /> Add customer
         </button>
       </div>
+
+      {error && (
+        <div className="table-empty" style={{ color: "var(--danger, #e53e3e)", marginBottom: "1rem" }}>
+          {error}{" "}
+          <button className="select-button" onClick={fetchCustomers}>
+            Retry
+          </button>
+        </div>
+      )}
 
       <div className="customer-toolbar">
         <div className="customer-search">
@@ -74,7 +116,11 @@ export default function Customers() {
             </thead>
 
             <tbody>
-              {filteredCustomers.length === 0 ? (
+              {loading ? (
+                <tr>
+                  <td colSpan="4" className="table-empty">Loading…</td>
+                </tr>
+              ) : filteredCustomers.length === 0 ? (
                 <tr>
                   <td colSpan="4" className="table-empty">
                     <Users size={28} />
@@ -88,7 +134,11 @@ export default function Customers() {
                     <td>{customer.name}</td>
                     <td>{customer.email}</td>
                     <td>{customer.phone || "—"}</td>
-                    <td><span className="customer-status">Active</span></td>
+                    <td>
+                      <span className="customer-status">
+                        {customer.active ? "Active" : "Inactive"}
+                      </span>
+                    </td>
                   </tr>
                 ))
               )}
@@ -151,6 +201,28 @@ export default function Customers() {
                 />
               </label>
 
+              <label>
+                Company name
+                <input
+                  value={form.companyName}
+                  onChange={(event) =>
+                    setForm({ ...form, companyName: event.target.value })
+                  }
+                  placeholder="Enter company name"
+                />
+              </label>
+
+              <label>
+                Address
+                <input
+                  value={form.address}
+                  onChange={(event) =>
+                    setForm({ ...form, address: event.target.value })
+                  }
+                  placeholder="Enter address"
+                />
+              </label>
+
               <div className="customer-modal-actions">
                 <button
                   type="button"
@@ -159,8 +231,8 @@ export default function Customers() {
                 >
                   Cancel
                 </button>
-                <button type="submit" className="primary-button">
-                  Add customer
+                <button type="submit" className="primary-button" disabled={saving}>
+                  {saving ? "Saving…" : "Add customer"}
                 </button>
               </div>
             </form>
@@ -170,4 +242,3 @@ export default function Customers() {
     </section>
   );
 }
-

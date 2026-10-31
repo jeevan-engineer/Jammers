@@ -1,39 +1,78 @@
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Package, Plus, Search, X, Trash2 } from "lucide-react";
+import api from "./api/axios";
 
 export default function Products() {
   const [products, setProducts] = useState([]);
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     name: "",
-    description: "",
-    sku: "",
+    type: "SERVICE",
+    salesPrice: "",
+    costPrice: "",
+    notes: "",
+    active: true,
   });
 
+  const fetchProducts = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await api.get("/products");
+      setProducts(response.data.content ?? []);
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to load products.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchProducts();
+  }, [fetchProducts]);
+
   const filteredProducts = products.filter((product) =>
-    `${product.name} ${product.description} ${product.sku}`
+    `${product.name} ${product.type} ${product.notes ?? ""}`
       .toLowerCase()
       .includes(search.toLowerCase())
   );
 
-  function addProduct(event) {
+  async function addProduct(event) {
     event.preventDefault();
-
-    setProducts((previous) => [
-      ...previous,
-      { ...form, id: Date.now() },
-    ]);
-
-    setForm({ name: "", description: "", sku: "" });
-    setShowForm(false);
+    setSaving(true);
+    setError(null);
+    try {
+      await api.post("/products", {
+        name: form.name,
+        type: form.type,
+        salesPrice: Number(form.salesPrice),
+        costPrice: Number(form.costPrice),
+        notes: form.notes,
+        active: true,
+      });
+      setForm({ name: "", type: "SERVICE", salesPrice: "", costPrice: "", notes: "", active: true });
+      setShowForm(false);
+      await fetchProducts();
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to save product.");
+    } finally {
+      setSaving(false);
+    }
   }
 
-  function deleteProduct(id) {
-    setProducts((previous) =>
-      previous.filter((product) => product.id !== id)
-    );
+  async function deleteProduct(id) {
+    setError(null);
+    try {
+      await api.delete(`/products/${id}`);
+      await fetchProducts();
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to delete product.");
+    }
   }
 
   return (
@@ -51,6 +90,15 @@ export default function Products() {
           <Plus size={17} /> Add product
         </button>
       </div>
+
+      {error && (
+        <div className="table-empty" style={{ color: "var(--danger, #e53e3e)", marginBottom: "1rem" }}>
+          {error}{" "}
+          <button className="select-button" onClick={fetchProducts}>
+            Retry
+          </button>
+        </div>
+      )}
 
       <div className="customer-toolbar">
         <div className="customer-search">
@@ -70,15 +118,19 @@ export default function Products() {
             <thead>
               <tr>
                 <th>PRODUCT</th>
-                <th>SKU</th>
-                <th>DESCRIPTION</th>
+                <th>TYPE</th>
+                <th>PRICE</th>
                 <th>STATUS</th>
                 <th>ACTION</th>
               </tr>
             </thead>
 
             <tbody>
-              {filteredProducts.length === 0 ? (
+              {loading ? (
+                <tr>
+                  <td colSpan="5" className="table-empty">Loading…</td>
+                </tr>
+              ) : filteredProducts.length === 0 ? (
                 <tr>
                   <td colSpan="5" className="table-empty">
                     <Package size={28} />
@@ -90,9 +142,17 @@ export default function Products() {
                 filteredProducts.map((product) => (
                   <tr key={product.id}>
                     <td><strong>{product.name}</strong></td>
-                    <td>{product.sku || "—"}</td>
-                    <td>{product.description || "—"}</td>
-                    <td><span className="customer-status">Active</span></td>
+                    <td>{product.type}</td>
+                    <td>
+                      {product.salesPrice != null
+                        ? new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(product.salesPrice)
+                        : "—"}
+                    </td>
+                    <td>
+                      <span className="customer-status">
+                        {product.active ? "Active" : "Inactive"}
+                      </span>
+                    </td>
                     <td>
                       <button
                         className="icon-button"
@@ -142,24 +202,56 @@ export default function Products() {
               </label>
 
               <label>
-                SKU
-                <input
-                  value={form.sku}
+                Type
+                <select
+                  value={form.type}
                   onChange={(event) =>
-                    setForm({ ...form, sku: event.target.value })
+                    setForm({ ...form, type: event.target.value })
                   }
-                  placeholder="Enter product SKU"
+                >
+                  <option value="SERVICE">Service</option>
+                  <option value="CONSUMABLE">Consumable</option>
+                  <option value="STORABLE">Storable</option>
+                </select>
+              </label>
+
+              <label>
+                Sales price
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={form.salesPrice}
+                  onChange={(event) =>
+                    setForm({ ...form, salesPrice: event.target.value })
+                  }
+                  placeholder="Enter sales price"
                 />
               </label>
 
               <label>
-                Description
+                Cost price
                 <input
-                  value={form.description}
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={form.costPrice}
                   onChange={(event) =>
-                    setForm({ ...form, description: event.target.value })
+                    setForm({ ...form, costPrice: event.target.value })
                   }
-                  placeholder="Enter product description"
+                  placeholder="Enter cost price"
+                />
+              </label>
+
+              <label>
+                Notes
+                <textarea
+                  value={form.notes}
+                  onChange={(event) =>
+                    setForm({ ...form, notes: event.target.value })
+                  }
+                  placeholder="Enter product notes"
+                  rows={3}
                 />
               </label>
 
@@ -171,8 +263,8 @@ export default function Products() {
                 >
                   Cancel
                 </button>
-                <button type="submit" className="primary-button">
-                  Add product
+                <button type="submit" className="primary-button" disabled={saving}>
+                  {saving ? "Saving…" : "Add product"}
                 </button>
               </div>
             </form>
@@ -182,4 +274,3 @@ export default function Products() {
     </section>
   );
 }
-

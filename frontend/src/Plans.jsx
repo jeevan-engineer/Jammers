@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Layers,
   Plus,
@@ -8,58 +8,96 @@ import {
   Trash2,
   IndianRupee,
 } from "lucide-react";
+import api from "./api/axios";
 
 export default function Plans() {
   const [plans, setPlans] = useState([]);
+  const [products, setProducts] = useState([]);
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [saving, setSaving] = useState(false);
 
   const [form, setForm] = useState({
     name: "",
-    product: "",
+    productId: "",
     price: "",
-    currency: "INR",
-    interval: "MONTHLY",
-    trialDays: "0",
+    billingPeriod: "MONTHLY",
+    minQuantity: "1",
   });
 
+  const fetchPlans = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await api.get("/plans");
+      setPlans(response.data.content ?? []);
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to load plans.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const fetchProducts = useCallback(async () => {
+    try {
+      const response = await api.get("/products");
+      setProducts(response.data.content ?? []);
+    } catch {
+      // silently fail — products list is only used for the form select
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchPlans();
+    fetchProducts();
+  }, [fetchPlans, fetchProducts]);
+
   const filteredPlans = plans.filter((plan) =>
-    `${plan.name} ${plan.product}`
+    `${plan.name} ${plan.productName ?? ""}`
       .toLowerCase()
       .includes(search.toLowerCase())
   );
 
-  function addPlan(event) {
+  async function addPlan(event) {
     event.preventDefault();
-
-    setPlans((previous) => [
-      ...previous,
-      { ...form, id: Date.now() },
-    ]);
-
-    setForm({
-      name: "",
-      product: "",
-      price: "",
-      currency: "INR",
-      interval: "MONTHLY",
-      trialDays: "0",
-    });
-
-    setShowForm(false);
+    setSaving(true);
+    setError(null);
+    try {
+      await api.post("/plans", {
+        productId: Number(form.productId),
+        name: form.name,
+        price: Number(form.price),
+        billingPeriod: form.billingPeriod,
+        minQuantity: Number(form.minQuantity),
+        active: true,
+      });
+      setForm({ name: "", productId: "", price: "", billingPeriod: "MONTHLY", minQuantity: "1" });
+      setShowForm(false);
+      await fetchPlans();
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to save plan.");
+    } finally {
+      setSaving(false);
+    }
   }
 
-  function deletePlan(id) {
-    setPlans((previous) =>
-      previous.filter((plan) => plan.id !== id)
-    );
+  async function deletePlan(id) {
+    setError(null);
+    try {
+      await api.delete(`/plans/${id}`);
+      await fetchPlans();
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to delete plan.");
+    }
   }
 
-  function formatPrice(plan) {
+  function formatPrice(price) {
     return new Intl.NumberFormat("en-IN", {
       style: "currency",
-      currency: plan.currency,
-    }).format(Number(plan.price));
+      currency: "INR",
+    }).format(Number(price));
   }
 
   return (
@@ -80,6 +118,15 @@ export default function Plans() {
           <Plus size={17} /> Create plan
         </button>
       </div>
+
+      {error && (
+        <div className="table-empty" style={{ color: "var(--danger, #e53e3e)", marginBottom: "1rem" }}>
+          {error}{" "}
+          <button className="select-button" onClick={fetchPlans}>
+            Retry
+          </button>
+        </div>
+      )}
 
       <div className="customer-toolbar">
         <div className="customer-search">
@@ -102,13 +149,17 @@ export default function Plans() {
                 <th>PRODUCT</th>
                 <th>PRICE</th>
                 <th>BILLING</th>
-                <th>TRIAL</th>
+                <th>MIN QTY</th>
                 <th>ACTION</th>
               </tr>
             </thead>
 
             <tbody>
-              {filteredPlans.length === 0 ? (
+              {loading ? (
+                <tr>
+                  <td colSpan="6" className="table-empty">Loading…</td>
+                </tr>
+              ) : filteredPlans.length === 0 ? (
                 <tr>
                   <td colSpan="6" className="table-empty">
                     <Layers size={28} />
@@ -120,10 +171,10 @@ export default function Plans() {
                 filteredPlans.map((plan) => (
                   <tr key={plan.id}>
                     <td><strong>{plan.name}</strong></td>
-                    <td>{plan.product}</td>
-                    <td>{formatPrice(plan)}</td>
-                    <td>{plan.interval}</td>
-                    <td>{plan.trialDays} days</td>
+                    <td>{plan.productName ?? "—"}</td>
+                    <td>{formatPrice(plan.price)}</td>
+                    <td>{plan.billingPeriod}</td>
+                    <td>{plan.minQuantity}</td>
                     <td>
                       <button
                         className="icon-button"
@@ -172,15 +223,21 @@ export default function Plans() {
               </label>
 
               <label>
-                Product name
-                <input
+                Product
+                <select
                   required
-                  value={form.product}
+                  value={form.productId}
                   onChange={(e) =>
-                    setForm({ ...form, product: e.target.value })
+                    setForm({ ...form, productId: e.target.value })
                   }
-                  placeholder="Enter associated product"
-                />
+                >
+                  <option value="">Select a product</option>
+                  {products.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
               </label>
 
               <label>
@@ -199,29 +256,13 @@ export default function Plans() {
               </label>
 
               <label>
-                Currency
-                <select
-                  value={form.currency}
-                  onChange={(e) =>
-                    setForm({ ...form, currency: e.target.value })
-                  }
-                >
-                  <option value="INR">INR - Indian Rupee</option>
-                  <option value="USD">USD - US Dollar</option>
-                  <option value="EUR">EUR - Euro</option>
-                  <option value="GBP">GBP - British Pound</option>
-                </select>
-              </label>
-
-              <label>
                 Billing interval
                 <select
-                  value={form.interval}
+                  value={form.billingPeriod}
                   onChange={(e) =>
-                    setForm({ ...form, interval: e.target.value })
+                    setForm({ ...form, billingPeriod: e.target.value })
                   }
                 >
-                  <option value="DAILY">Daily</option>
                   <option value="WEEKLY">Weekly</option>
                   <option value="MONTHLY">Monthly</option>
                   <option value="QUARTERLY">Quarterly</option>
@@ -230,13 +271,13 @@ export default function Plans() {
               </label>
 
               <label>
-                Free trial (days)
+                Minimum quantity
                 <input
                   type="number"
-                  min="0"
-                  value={form.trialDays}
+                  min="1"
+                  value={form.minQuantity}
                   onChange={(e) =>
-                    setForm({ ...form, trialDays: e.target.value })
+                    setForm({ ...form, minQuantity: e.target.value })
                   }
                 />
               </label>
@@ -249,8 +290,8 @@ export default function Plans() {
                 >
                   Cancel
                 </button>
-                <button type="submit" className="primary-button">
-                  Create plan
+                <button type="submit" className="primary-button" disabled={saving}>
+                  {saving ? "Saving…" : "Create plan"}
                 </button>
               </div>
             </form>
@@ -260,4 +301,3 @@ export default function Plans() {
     </section>
   );
 }
-

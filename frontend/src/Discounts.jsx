@@ -1,42 +1,81 @@
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Search, Plus, X, Trash2, Tag } from "lucide-react";
+import api from "./api/axios";
 
 function Discounts() {
   const [discounts, setDiscounts] = useState([]);
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [saving, setSaving] = useState(false);
 
   const [form, setForm] = useState({
     name: "",
     code: "",
-    type: "PERCENTAGE",
-    value: "",
-    validUntil: "",
+    discountType: "PERCENTAGE",
+    discountValue: "",
+    startDate: "",
+    endDate: "",
   });
 
-  const addDiscount = (e) => {
+  const fetchDiscounts = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await api.get("/discounts", { params: { activeOnly: false } });
+      setDiscounts(response.data.content ?? []);
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to load discounts.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchDiscounts();
+  }, [fetchDiscounts]);
+
+  const addDiscount = async (e) => {
     e.preventDefault();
-
-    const newDiscount = {
-      id: Date.now(),
-      ...form,
-      status: "ACTIVE",
-    };
-
-    setDiscounts((prev) => [...prev, newDiscount]);
-    setForm({
-      name: "",
-      code: "",
-      type: "PERCENTAGE",
-      value: "",
-      validUntil: "",
-    });
-    setShowForm(false);
+    setSaving(true);
+    setError(null);
+    try {
+      await api.post("/discounts", {
+        name: form.name,
+        code: form.code,
+        discountType: form.discountType,
+        discountValue: Number(form.discountValue),
+        startDate: form.startDate,
+        endDate: form.endDate,
+        active: true,
+      });
+      setForm({
+        name: "",
+        code: "",
+        discountType: "PERCENTAGE",
+        discountValue: "",
+        startDate: "",
+        endDate: "",
+      });
+      setShowForm(false);
+      await fetchDiscounts();
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to save discount.");
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const deleteDiscount = (id) => {
-    setDiscounts((prev) => prev.filter((item) => item.id !== id));
+  const deleteDiscount = async (id) => {
+    setError(null);
+    try {
+      await api.delete(`/discounts/${id}`);
+      await fetchDiscounts();
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to delete discount.");
+    }
   };
 
   const filteredDiscounts = discounts.filter((item) =>
@@ -56,6 +95,15 @@ function Discounts() {
           <Plus size={16} /> Add Discount
         </button>
       </div>
+
+      {error && (
+        <div className="table-empty" style={{ color: "var(--danger, #e53e3e)", marginBottom: "1rem" }}>
+          {error}{" "}
+          <button className="select-button" onClick={fetchDiscounts}>
+            Retry
+          </button>
+        </div>
+      )}
 
       <div className="customer-toolbar">
         <div className="customer-search">
@@ -85,7 +133,11 @@ function Discounts() {
             </thead>
 
             <tbody>
-              {filteredDiscounts.length === 0 ? (
+              {loading ? (
+                <tr>
+                  <td colSpan="7" className="table-empty">Loading…</td>
+                </tr>
+              ) : filteredDiscounts.length === 0 ? (
                 <tr>
                   <td colSpan="7" className="table-empty">
                     <Tag size={28} />
@@ -98,13 +150,17 @@ function Discounts() {
                   <tr key={item.id}>
                     <td>{item.name}</td>
                     <td><strong>{item.code}</strong></td>
-                    <td>{item.type === "PERCENTAGE" ? "Percentage" : "Fixed amount"}</td>
+                    <td>{item.discountType === "PERCENTAGE" ? "Percentage" : "Fixed amount"}</td>
                     <td>
-                      {item.type === "PERCENTAGE" ? `${item.value}%` : `₹${item.value}`}
+                      {item.discountType === "PERCENTAGE"
+                        ? `${item.discountValue}%`
+                        : `₹${item.discountValue}`}
                     </td>
-                    <td>{item.validUntil || "No expiry"}</td>
+                    <td>{item.endDate || "No expiry"}</td>
                     <td>
-                      <span className="customer-status">{item.status}</span>
+                      <span className="customer-status">
+                        {item.active ? "ACTIVE" : "INACTIVE"}
+                      </span>
                     </td>
                     <td>
                       <button
@@ -166,8 +222,8 @@ function Discounts() {
               <label>
                 Discount Type
                 <select
-                  value={form.type}
-                  onChange={(e) => setForm({ ...form, type: e.target.value })}
+                  value={form.discountType}
+                  onChange={(e) => setForm({ ...form, discountType: e.target.value })}
                 >
                   <option value="PERCENTAGE">Percentage (%)</option>
                   <option value="FIXED">Fixed Amount (₹)</option>
@@ -181,19 +237,30 @@ function Discounts() {
                   type="number"
                   min="0.01"
                   step="0.01"
-                  max={form.type === "PERCENTAGE" ? "100" : undefined}
-                  value={form.value}
-                  onChange={(e) => setForm({ ...form, value: e.target.value })}
-                  placeholder={form.type === "PERCENTAGE" ? "Example: 20" : "Example: 200"}
+                  max={form.discountType === "PERCENTAGE" ? "100" : undefined}
+                  value={form.discountValue}
+                  onChange={(e) => setForm({ ...form, discountValue: e.target.value })}
+                  placeholder={form.discountType === "PERCENTAGE" ? "Example: 20" : "Example: 200"}
                 />
               </label>
 
               <label>
-                Valid Until
+                Start Date
                 <input
+                  required
                   type="date"
-                  value={form.validUntil}
-                  onChange={(e) => setForm({ ...form, validUntil: e.target.value })}
+                  value={form.startDate}
+                  onChange={(e) => setForm({ ...form, startDate: e.target.value })}
+                />
+              </label>
+
+              <label>
+                End Date
+                <input
+                  required
+                  type="date"
+                  value={form.endDate}
+                  onChange={(e) => setForm({ ...form, endDate: e.target.value })}
                 />
               </label>
 
@@ -205,8 +272,8 @@ function Discounts() {
                 >
                   Cancel
                 </button>
-                <button type="submit" className="primary-button">
-                  Save Discount
+                <button type="submit" className="primary-button" disabled={saving}>
+                  {saving ? "Saving…" : "Save Discount"}
                 </button>
               </div>
             </form>

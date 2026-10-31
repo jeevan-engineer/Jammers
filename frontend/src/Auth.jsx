@@ -10,12 +10,14 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import "./Auth.css";
+import api, { saveSession } from "./api/axios";
 
 function Auth({ onAuthenticated }) {
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const [form, setForm] = useState({
     name: "",
@@ -25,7 +27,7 @@ function Auth({ onAuthenticated }) {
     remember: false,
   });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage("");
 
@@ -39,8 +41,42 @@ function Auth({ onAuthenticated }) {
       return;
     }
 
-    // TODO: replace with real API call — onAuthenticated(role) from backend response.
-    onAuthenticated("admin");
+    setLoading(true);
+    try {
+      let response;
+      if (isLogin) {
+        response = await api.post("/auth/login", {
+          email: form.email,
+          password: form.password,
+        });
+      } else {
+        response = await api.post("/auth/signup", {
+          fullName: form.name,
+          email: form.email,
+          password: form.password,
+        });
+      }
+
+      const data = response.data;
+      saveSession(data);
+      onAuthenticated(data.role.toLowerCase());
+    } catch (err) {
+      const fieldErrors = err.response?.data?.fieldErrors || err.response?.data?.validationErrors;
+      let msg = "";
+      if (fieldErrors && typeof fieldErrors === "object") {
+        msg = Object.values(fieldErrors).join(". ");
+      }
+      if (!msg) {
+        msg =
+          err.response?.data?.message ||
+          (err.response?.status === 401
+            ? "Invalid email or password."
+            : (isLogin ? "Login failed. Please check your credentials." : "Registration failed. Please check your details."));
+      }
+      setMessage(msg);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const updateField = (field, value) => {
@@ -206,9 +242,9 @@ function Auth({ onAuthenticated }) {
               </div>
             )}
 
-            <button type="submit" className="auth-submit">
-              {isLogin ? "Sign In" : "Create Account"}
-              <ArrowRight size={18} />
+            <button type="submit" className="auth-submit" disabled={loading}>
+              {loading ? "Signing in…" : (isLogin ? "Sign In" : "Create Account")}
+              {!loading && <ArrowRight size={18} />}
             </button>
           </form>
 
@@ -228,51 +264,6 @@ function Auth({ onAuthenticated }) {
           <p className="auth-security">
             Secure access to your Brightloop workspace
           </p>
-
-          {/* ── Demo Access ────────────────────────────────── */}
-          <div className="auth-demo-section">
-            <div className="auth-demo-divider">
-              <span>or try a demo</span>
-            </div>
-            <p className="auth-demo-note">
-              No account needed — select a role to explore the dashboard.
-            </p>
-            <div className="auth-demo-buttons">
-              <button
-                type="button"
-                className="auth-demo-btn auth-demo-admin"
-                onClick={() => onAuthenticated("admin")}
-              >
-                <span className="auth-demo-icon">🔐</span>
-                <span>
-                  <strong>Administrator</strong>
-                  <small>Full system access</small>
-                </span>
-              </button>
-              <button
-                type="button"
-                className="auth-demo-btn auth-demo-staff"
-                onClick={() => onAuthenticated("staff")}
-              >
-                <span className="auth-demo-icon">👤</span>
-                <span>
-                  <strong>Staff Member</strong>
-                  <small>Customer management</small>
-                </span>
-              </button>
-              <button
-                type="button"
-                className="auth-demo-btn auth-demo-customer"
-                onClick={() => onAuthenticated("customer")}
-              >
-                <span className="auth-demo-icon">🏢</span>
-                <span>
-                  <strong>Customer</strong>
-                  <small>Subscription portal</small>
-                </span>
-              </button>
-            </div>
-          </div>
         </div>
       </div>
     </div>
