@@ -84,7 +84,14 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public UserResponse updateUser(Long id, UpdateUserRequest request) {
+    public UserResponse updateUser(Long id, UpdateUserRequest request, Long requestingUserId) {
+        // Business rule: admins cannot deactivate their own account
+        if (id.equals(requestingUserId) && Boolean.FALSE.equals(request.active())) {
+            throw new BusinessRuleException(
+                    "Administrators cannot deactivate their own account. " +
+                    "Please ask another admin to perform this action.");
+        }
+
         User user = findUserOrThrow(id);
         user.setFullName(request.fullName());
         user.setActive(request.active());

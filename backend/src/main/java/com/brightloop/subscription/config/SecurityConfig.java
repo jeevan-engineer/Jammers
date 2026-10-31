@@ -47,7 +47,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
  * UsernamePasswordAuthenticationFilter, the filter won't run and all
  * protected requests will be rejected as unauthenticated.
  */
-@Configuration
+@Configuration("subscriptionSecurityConfig")
 @EnableWebSecurity
 @EnableMethodSecurity
 @RequiredArgsConstructor

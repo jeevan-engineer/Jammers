@@ -57,22 +57,28 @@ public class DataSeeder implements CommandLineRunner {
     // ── Seed: ADMIN ───────────────────────────────────────────────────
 
     private void seedAdmin() {
-        if (userRepository.existsByEmail(adminEmail)) {
-            log.info("[DataSeeder] Admin user already exists — skipping: {}", adminEmail);
-            return;
+        if (!userRepository.existsByEmail(adminEmail)) {
+            userRepository.save(User.builder()
+                    .fullName("System Administrator")
+                    .email(adminEmail)
+                    .passwordHash(passwordEncoder.encode(adminPassword))
+                    .role(Role.ADMIN)
+                    .active(true)
+                    .build());
+            log.info("[DataSeeder] ✅ Admin seeded | email={} | password={}", adminEmail, adminPassword);
         }
 
-        userRepository.save(User.builder()
-                .fullName("System Administrator")
-                .email(adminEmail)
-                .passwordHash(passwordEncoder.encode(adminPassword))
-                .role(Role.ADMIN)
-                .active(true)
-                .build());
-
-        // Log credential hint WITHOUT printing the actual password.
-        log.info("[DataSeeder] ✅ Admin seeded | email={} | password=<see app.admin.password in properties>",
-                adminEmail);
+        final String jammersAdminEmail = "admin@jammers.com";
+        if (!userRepository.existsByEmail(jammersAdminEmail)) {
+            userRepository.save(User.builder()
+                    .fullName("Jammers Administrator")
+                    .email(jammersAdminEmail)
+                    .passwordHash(passwordEncoder.encode("Admin@1234"))
+                    .role(Role.ADMIN)
+                    .active(true)
+                    .build());
+            log.info("[DataSeeder] ✅ Jammers Admin seeded | email={} | password=Admin@1234", jammersAdminEmail);
+        }
     }
 
     // ── Seed: INTERNAL staff ─────────────────────────────────────────

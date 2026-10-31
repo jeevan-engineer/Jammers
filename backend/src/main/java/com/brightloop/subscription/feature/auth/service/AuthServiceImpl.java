@@ -62,7 +62,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public AuthResponse signup(SignupRequest request) {
-        if (userRepository.existsByEmail(request.email())) {
+        if (userRepository.existsByEmail(request.email()) || customerRepository.existsByEmail(request.email())) {
             throw new DuplicateResourceException("User", "email", request.email());
         }
 
