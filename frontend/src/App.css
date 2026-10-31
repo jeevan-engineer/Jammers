@@ -1,3 +1,79 @@
+/* BRIGHTLOOP DESIGN SYSTEM */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+:root {
+  font-family: 'Inter', sans-serif;
+  color: #17243a;
+  background: #f6f8fc;
+
+  --primary: #526ce5;
+  --primary-hover: #4059d0;
+  --sidebar: #111d32;
+  --background: #f6f8fc;
+  --surface: #ffffff;
+  --border: #e8edf5;
+  --text-primary: #17243a;
+  --text-secondary: #8491a6;
+  --success: #16a36a;
+  --danger: #dc4c4c;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+
+  --shadow-sm: 0 2px 8px rgba(20, 35, 65, 0.04);
+  --shadow-md: 0 8px 24px rgba(20, 35, 65, 0.07);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  transition: all 180ms ease;
+}
+
+.stat-card,
+.panel {
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+}
+
+.primary-button {
+  background: var(--primary);
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 10px rgba(82, 108, 229, 0.18);
+}
+
+.primary-button:hover {
+  background: var(--primary-hover);
+  transform: translateY(-1px);
+}
+
+.nav-item {
+  transition: background 180ms ease, color 180ms ease;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -18,6 +94,8 @@
   flex-direction: column;
   padding: 25px 17px 15px;
   z-index: 20;
+  overflow-x: hidden;
+  transition: width 250ms ease, padding 250ms ease;
 }
 
 .brand {
@@ -193,6 +271,7 @@
 .main-content {
   margin-left: 258px;
   min-height: 100vh;
+  transition: margin-left 250ms ease;
 }
 
 .topbar {
@@ -787,6 +866,7 @@ footer {
     padding: 20px;
   }
 }
+
 .customer-modal select {
   width: 100%;
   box-sizing: border-box;
@@ -797,6 +877,7 @@ footer {
   color: #334155;
   font: inherit;
 }
+
 .subscription-cancelled {
   display: inline-block;
   padding: 5px 10px;
@@ -806,6 +887,7 @@ footer {
   font-size: 11px;
   font-weight: 600;
 }
+
 .invoice-unpaid {
   display: inline-block;
   padding: 5px 10px;
@@ -815,6 +897,7 @@ footer {
   font-size: 11px;
   font-weight: 600;
 }
+
 .payment-success {
   display: inline-block;
   padding: 5px 10px;
@@ -825,3 +908,138 @@ footer {
   font-weight: 600;
 }
 
+/* COLLAPSIBLE SIDEBAR */
+
+.sidebar-toggle {
+  margin-left: auto;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #aebbd0;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.sidebar-toggle:hover {
+  background: #30446b;
+  color: white;
+}
+
+.sidebar-collapsed {
+  width: 82px;
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
+.sidebar-collapsed .brand {
+  padding-left: 0;
+  padding-right: 0;
+  justify-content: space-between;
+}
+
+.sidebar-collapsed .brand-icon {
+  flex-shrink: 0;
+}
+
+.sidebar-collapsed .sidebar-toggle {
+  margin-left: 0;
+}
+
+.sidebar-collapsed .nav-item {
+  justify-content: center;
+  padding: 13px 8px;
+}
+
+.sidebar-collapsed .nav-item svg {
+  flex-shrink: 0;
+}
+
+.sidebar-collapsed .profile {
+  justify-content: center;
+}
+
+.main-content-expanded {
+  margin-left: 82px;
+}
+
+/* MOBILE: keep the existing drawer behaviour */
+@media (max-width: 700px) {
+  .sidebar {
+    width: 258px;
+    padding: 25px 17px 15px;
+  }
+
+  .sidebar-collapsed {
+    width: 258px;
+  }
+
+  .main-content,
+  .main-content-expanded {
+    margin-left: 0;
+  }
+}
+
+/* ── Row hover on all tables ── */
+tbody tr {
+  transition: background 140ms ease;
+}
+tbody tr:hover {
+  background: #f8fafd;
+}
+
+/* ── Danger icon-button (delete) ── */
+.icon-button:hover {
+  color: #dc4c4c;
+  background: #fff0f0;
+  border-radius: 6px;
+}
+
+/* ── Topbar search border ── */
+.topbar-search {
+  border: 1px solid #e8edf5;
+  border-radius: 8px;
+  padding: 7px 12px;
+  background: #f8f9fc;
+}
+
+/* ── Stat card accent top bar ── */
+.stat-card {
+  border-top: 3px solid #e8edff;
+}
+
+/* ── Active nav item pill ── */
+.nav-item.active {
+  background: linear-gradient(90deg, #30446b, #283d62);
+}
+
+/* ── Topbar notification bell hover ── */
+.icon-button {
+  padding: 8px;
+  border-radius: 8px;
+  transition: background 160ms ease, color 160ms ease;
+}
+
+/* ── Admin logout button ──────────────────────────────────────────────────── */
+
+.admin-logout-btn {
+  color: #f87171 !important;
+  margin-top: 8px;
+}
+
+.admin-logout-btn:hover {
+  background: rgba(248, 113, 113, 0.12) !important;
+  color: #f87171 !important;
+}
+
+.admin-topbar-logout {
+  color: #8491a6;
+}
+
+.admin-topbar-logout:hover {
+  color: #dc4c4c;
+  background: #fff0f0;
+}
