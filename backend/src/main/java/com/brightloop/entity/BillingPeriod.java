@@ -1,4 +1,8 @@
 package com.brightloop.entity;
 
-public class BillingPeriod {
+public enum BillingPeriod {
+    DAILY,
+    WEEKLY,
+    MONTHLY,
+    YEARLY
 }
