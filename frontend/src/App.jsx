@@ -1,122 +1,290 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
 
-function App() {
-  const [count, setCount] = useState(0)
+import { useState } from "react";
+import {
+  LayoutDashboard,
+  Package,
+  Layers,
+  Users,
+  Repeat,
+  FileText,
+  CreditCard,
+  Percent,
+  Tag,
+  UserCog,
+  Bell,
+  Search,
+  Menu,
+  ArrowUpRight,
+  ArrowDownRight,
+  Wallet,
+  CircleAlert,
+  CalendarDays,
+  Plus,
+  ChevronDown,
+  Activity,
+} from "lucide-react";
 
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  Tooltip,
+} from "recharts";
+
+import "./App.css";
+
+const navigation = [
+  {
+    title: "OVERVIEW", items: [
+      { label: "Dashboard", icon: LayoutDashboard },
+    ]
+  },
+  {
+    title: "MANAGEMENT", items: [
+      { label: "Products", icon: Package },
+      { label: "Plans", icon: Layers },
+      { label: "Customers", icon: Users },
+      { label: "Subscriptions", icon: Repeat },
+      { label: "Invoices", icon: FileText },
+      { label: "Payments", icon: CreditCard },
+    ]
+  },
+  {
+    title: "CONFIGURATION", items: [
+      { label: "Taxes", icon: Percent },
+      { label: "Discounts", icon: Tag },
+      { label: "Users", icon: UserCog },
+    ]
+  },
+];
+
+const stats = [
+  { label: "Active Subscriptions", value: "—", icon: Repeat, note: "Awaiting API data" },
+  { label: "Revenue Collected", value: "—", icon: Wallet, note: "Awaiting API data" },
+  { label: "Outstanding Amount", value: "—", icon: CircleAlert, note: "Awaiting API data" },
+  { label: "Overdue Invoices", value: "—", icon: FileText, note: "Awaiting API data" },
+];
+
+function Sidebar({ activePage, setActivePage, open, setOpen }) {
   return (
     <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
+      {open && <div className="sidebar-overlay" onClick={() => setOpen(false)} />}
+      <aside className={`sidebar ${open ? "sidebar-open" : ""}`}>
+        <div className="brand">
+          <div className="brand-icon">B</div>
+          <div>
+            <h2>brightloop</h2>
+            <span>SOFTWARE</span>
+          </div>
         </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
 
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
+        <div className="workspace">
+          <div className="workspace-avatar">B</div>
+          <div>
+            <strong>Brightloop Workspace</strong>
+            <small>Business account</small>
+          </div>
+          <ChevronDown size={15} />
         </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
+        <nav className="sidebar-nav">
+          {navigation.map((group) => (
+            <div className="nav-group" key={group.title}>
+              <p className="nav-heading">{group.title}</p>
+              {group.items.map(({ label, icon: Icon }) => (
+                <button
+                  key={label}
+                  className={`nav-item ${activePage === label ? "active" : ""}`}
+                  onClick={() => {
+                    setActivePage(label);
+                    setOpen(false);
+                  }}
+                >
+                  <Icon size={18} />
+                  <span>{label}</span>
+                </button>
+              ))}
+            </div>
+          ))}
+        </nav>
+
+        <div className="sidebar-bottom">
+          <div className="help-card">
+            <Activity size={19} />
+            <strong>Need assistance?</strong>
+            <span>Contact your administrator for support.</span>
+          </div>
+          <div className="profile">
+            <div className="profile-avatar">JN</div>
+            <div>
+              <strong>Administrator</strong>
+              <small>Workspace admin</small>
+            </div>
+            <ChevronDown size={15} />
+          </div>
+        </div>
+      </aside>
     </>
-  )
+  );
 }
 
-export default App
+function StatCard({ item }) {
+  const Icon = item.icon;
+  return (
+    <div className="stat-card">
+      <div className="stat-top">
+        <span>{item.label}</span>
+        <div className="stat-icon"><Icon size={19} /></div>
+      </div>
+      <h2>{item.value}</h2>
+      <p>{item.note}</p>
+    </div>
+  );
+}
+
+function Dashboard() {
+  return (
+    <>
+      <div className="page-heading">
+        <div>
+          <p className="breadcrumb">Overview / Dashboard</p>
+          <h1>Dashboard</h1>
+          <p className="subtitle">Monitor your subscription business in one place.</p>
+        </div>
+        <button className="primary-button">
+          <Plus size={17} /> Create subscription
+        </button>
+      </div>
+
+      <div className="stats-grid">
+        {stats.map((item) => <StatCard key={item.label} item={item} />)}
+      </div>
+
+      <div className="dashboard-grid">
+        <section className="panel revenue-panel">
+          <div className="panel-header">
+            <div>
+              <h3>Revenue overview</h3>
+              <p>Revenue performance over time</p>
+            </div>
+            <button className="select-button">
+              <CalendarDays size={15} /> This year <ChevronDown size={14} />
+            </button>
+          </div>
+
+          <div className="chart-empty">
+            <Activity size={30} />
+            <strong>Revenue data will appear here</strong>
+            <span>Connect the reports API to display revenue analytics.</span>
+          </div>
+        </section>
+
+        <section className="panel">
+          <div className="panel-header">
+            <div>
+              <h3>Monthly recurring revenue</h3>
+              <p>Current recurring revenue</p>
+            </div>
+          </div>
+          <div className="mrr-value">—</div>
+          <div className="empty-message">
+            <Wallet size={23} />
+            <span>Waiting for subscription analytics API.</span>
+          </div>
+        </section>
+      </div>
+
+      <section className="panel payments-panel">
+        <div className="panel-header">
+          <div>
+            <h3>Recent payments</h3>
+            <p>Latest transactions from your customers</p>
+          </div>
+          <button className="text-button">View all</button>
+        </div>
+
+        <div className="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>TRANSACTION</th>
+                <th>CUSTOMER</th>
+                <th>DATE</th>
+                <th>AMOUNT</th>
+                <th>STATUS</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td colSpan="5" className="table-empty">
+                  No payment records available yet.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </>
+  );
+}
+
+function PlaceholderPage({ title }) {
+  return (
+    <div className="placeholder-page">
+      <div className="placeholder-icon"><Layers size={27} /></div>
+      <h2>{title}</h2>
+      <p>This module is being prepared for backend integration.</p>
+      <span>API connection pending</span>
+    </div>
+  );
+}
+
+function App() {
+  const [activePage, setActivePage] = useState("Dashboard");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  return (
+    <div className="app-shell">
+      <Sidebar
+        activePage={activePage}
+        setActivePage={setActivePage}
+        open={sidebarOpen}
+        setOpen={setSidebarOpen}
+      />
+
+      <main className="main-content">
+        <header className="topbar">
+          <button className="mobile-menu" onClick={() => setSidebarOpen(true)}>
+            <Menu size={21} />
+          </button>
+          <div className="topbar-search">
+            <Search size={17} />
+            <input placeholder="Search anything..." />
+            <kbd>⌘ K</kbd>
+          </div>
+          <div className="topbar-right">
+            <button className="icon-button"><Bell size={19} /></button>
+            <div className="topbar-user">
+              <div className="profile-avatar">JN</div>
+              <div><strong>Administrator</strong><small>Admin</small></div>
+            </div>
+          </div>
+        </header>
+
+        <div className="page-container">
+          {activePage === "Dashboard" ? (
+            <Dashboard />
+          ) : (
+            <PlaceholderPage title={activePage} />
+          )}
+          <footer>© 2026 Brightloop Software. All rights reserved.</footer>
+        </div>
+      </main>
+    </div>
+  );
+}
+
+export default App;
