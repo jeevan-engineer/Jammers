@@ -22,6 +22,16 @@ public interface SubscriptionService {
 
     SubscriptionResponse closeSubscription(Long id, String reason);
 
+    SubscriptionResponse generateQuotation(Long templateId, com.brightloop.dto.QuotationGenerateRequest request);
+
+    SubscriptionResponse pauseSubscription(Long id, String reason);
+
+    SubscriptionResponse resumeSubscription(Long id);
+
+    SubscriptionResponse renewSubscription(Long id, com.brightloop.dto.SubscriptionRenewalRequest request);
+
+    Long generateSingleInvoice(Long id);
+
     /**
      * Executes automated periodic billing cycle generation:
      * finds active subscriptions due for billing, validates anti-double-billing rules,

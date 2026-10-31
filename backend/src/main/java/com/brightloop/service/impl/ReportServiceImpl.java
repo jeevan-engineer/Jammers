@@ -30,7 +30,12 @@ public class ReportServiceImpl implements ReportService {
 
     @Override
     public DashboardReportResponse getDashboardReport() {
-        log.info("Computing real-time dashboard analytics and financial reporting");
+        return getDashboardReport(null, null);
+    }
+
+    @Override
+    public DashboardReportResponse getDashboardReport(LocalDate startDate, LocalDate endDate) {
+        log.info("Computing real-time dashboard analytics (startDate: {}, endDate: {})", startDate, endDate);
 
         long totalSubs = subscriptionRepository.count();
         long activeSubs = subscriptionRepository.countByStatus(SubscriptionStatus.ACTIVE);
@@ -38,15 +43,34 @@ public class ReportServiceImpl implements ReportService {
         long closedSubs = subscriptionRepository.countByStatus(SubscriptionStatus.CLOSED);
 
         BigDecimal mrr = subscriptionRepository.sumTotalAmountByStatus(SubscriptionStatus.ACTIVE);
-        BigDecimal totalRevenue = invoiceRepository.sumTotalRevenue();
 
         List<InvoiceStatus> unsettled = List.of(InvoiceStatus.CONFIRMED, InvoiceStatus.UNPAID, InvoiceStatus.PARTIALLY_PAID);
-        BigDecimal amountOwed = invoiceRepository.sumAmountOwed(unsettled);
 
-        long totalInvoices = invoiceRepository.count();
-        long paidInvoices = invoiceRepository.countByStatus(InvoiceStatus.PAID);
-        long unpaidInvoices = invoiceRepository.countByStatus(InvoiceStatus.UNPAID);
-        long overdueInvoices = invoiceRepository.countOverdue(LocalDate.now(), unsettled);
+        BigDecimal totalRevenue;
+        BigDecimal amountOwed;
+        long totalInvoices;
+        long paidInvoices;
+        long partiallyPaidInvoices;
+        long unpaidInvoices;
+        long overdueInvoices;
+
+        if (startDate != null && endDate != null) {
+            totalRevenue = invoiceRepository.sumTotalRevenueBetween(startDate, endDate);
+            amountOwed = invoiceRepository.sumAmountOwedBetween(unsettled, startDate, endDate);
+            totalInvoices = invoiceRepository.countBetween(startDate, endDate);
+            paidInvoices = invoiceRepository.countByStatusBetween(InvoiceStatus.PAID, startDate, endDate);
+            partiallyPaidInvoices = invoiceRepository.countByStatusBetween(InvoiceStatus.PARTIALLY_PAID, startDate, endDate);
+            unpaidInvoices = invoiceRepository.countByStatusBetween(InvoiceStatus.UNPAID, startDate, endDate);
+            overdueInvoices = invoiceRepository.countOverdueBetween(LocalDate.now(), unsettled, startDate, endDate);
+        } else {
+            totalRevenue = invoiceRepository.sumTotalRevenue();
+            amountOwed = invoiceRepository.sumAmountOwed(unsettled);
+            totalInvoices = invoiceRepository.count();
+            paidInvoices = invoiceRepository.countByStatus(InvoiceStatus.PAID);
+            partiallyPaidInvoices = invoiceRepository.countByStatus(InvoiceStatus.PARTIALLY_PAID);
+            unpaidInvoices = invoiceRepository.countByStatus(InvoiceStatus.UNPAID);
+            overdueInvoices = invoiceRepository.countOverdue(LocalDate.now(), unsettled);
+        }
 
         List<Payment> recentPayments = paymentRepository.findTop10ByOrderByPaymentDateDesc();
         List<DashboardReportResponse.RecentActivityDto> activityDtos = new ArrayList<>();
@@ -71,9 +95,33 @@ public class ReportServiceImpl implements ReportService {
                 .monthlyRecurringRevenue(mrr)
                 .totalInvoices(totalInvoices)
                 .paidInvoices(paidInvoices)
+                .partiallyPaidInvoices(partiallyPaidInvoices)
                 .unpaidInvoices(unpaidInvoices)
                 .overdueInvoices(overdueInvoices)
                 .recentActivities(activityDtos)
                 .build();
+    }
+
+    @Override
+    public org.springframework.data.domain.Page<com.brightloop.dto.PaymentResponse> getPaymentHistory(org.springframework.data.domain.Pageable pageable) {
+        return paymentRepository.findAllByOrderByPaymentDateDesc(pageable)
+                .map(payment -> com.brightloop.dto.PaymentResponse.builder()
+                        .id(payment.getId())
+                        .paymentNumber(payment.getPaymentNumber())
+                        .invoiceId(payment.getInvoice().getId())
+                        .invoiceNumber(payment.getInvoice().getInvoiceNumber())
+                        .paymentMethodId(payment.getPaymentMethod() != null ? payment.getPaymentMethod().getId() : null)
+                        .paymentMethodType(payment.getPaymentMethod() != null ? payment.getPaymentMethod().getType().name() : null)
+                        .customerId(payment.getCustomerId())
+                        .amount(payment.getAmount())
+                        .currency(payment.getCurrency())
+                        .paymentDate(payment.getPaymentDate())
+                        .status(payment.getStatus())
+                        .transactionReference(payment.getTransactionReference())
+                        .gatewayResponse(payment.getGatewayResponse())
+                        .notes(payment.getNotes())
+                        .createdAt(payment.getCreatedAt())
+                        .updatedAt(payment.getUpdatedAt())
+                        .build());
     }
 }

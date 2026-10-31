@@ -10,8 +10,10 @@ import lombok.Getter;
 public enum PaymentMethodType {
     CASH("Cash"),
     CARD("Card (Credit/Debit)"),
+    CREDIT_CARD("Credit Card"),
     BANK_TRANSFER("Bank Transfer"),
-    UPI("UPI");
+    UPI("UPI"),
+    OTHER("Other");
 
     private final String displayName;
 

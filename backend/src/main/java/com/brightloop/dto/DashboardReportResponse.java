@@ -29,6 +29,7 @@ public class DashboardReportResponse {
 
     private long totalInvoices;
     private long paidInvoices;
+    private long partiallyPaidInvoices;
     private long unpaidInvoices;
     private long overdueInvoices;
 

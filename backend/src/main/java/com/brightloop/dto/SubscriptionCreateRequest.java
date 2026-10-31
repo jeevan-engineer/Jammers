@@ -44,6 +44,7 @@ public class SubscriptionCreateRequest {
     private LocalDate endDate;
     private LocalDate trialStartDate;
     private LocalDate trialEndDate;
+    private LocalDate quoteValidUntil;
 
     @Builder.Default
     private String currency = "USD";

@@ -21,6 +21,12 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, Long
 
     boolean existsBySubscriptionNumber(String subscriptionNumber);
 
+    boolean existsByQuotationTemplateId(Long quotationTemplateId);
+
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT s FROM Subscription s WHERE s.id = :id")
+    Optional<Subscription> findByIdForUpdate(@Param("id") Long id);
+
     Page<Subscription> findByCustomerId(Long customerId, Pageable pageable);
 
     Page<Subscription> findByStatus(SubscriptionStatus status, Pageable pageable);
@@ -29,7 +35,7 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, Long
 
     long countByStatus(SubscriptionStatus status);
 
-    @Query("SELECT s FROM Subscription s WHERE s.status = :status AND s.nextBillingDate <= :targetDate")
+    @Query("SELECT s FROM Subscription s WHERE s.status = :status AND s.pausedAt IS NULL AND s.nextBillingDate <= :targetDate")
     List<Subscription> findDueForBilling(
             @Param("status") SubscriptionStatus status,
             @Param("targetDate") LocalDate targetDate

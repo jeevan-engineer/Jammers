@@ -35,6 +35,7 @@ public class InvoiceServiceImpl implements InvoiceService {
 
     private final InvoiceRepository invoiceRepository;
     private final SubscriptionRepository subscriptionRepository;
+    private final com.brightloop.service.InvoiceNotificationService notificationService;
 
     @Override
     public InvoiceResponse createInvoice(InvoiceCreateRequest request) {
@@ -192,6 +193,66 @@ public class InvoiceServiceImpl implements InvoiceService {
         return invoiceRepository.findOverdue(LocalDate.now(), unsettled).stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public String generatePrintableInvoice(Long id) {
+        Invoice invoice = invoiceRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Invoice", "id", id));
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("================================================================================\n");
+        sb.append("                           BRIGHTLOOP INVOICE RECEIPT                           \n");
+        sb.append("================================================================================\n");
+        sb.append(String.format("Invoice Number   : %s\n", invoice.getInvoiceNumber()));
+        sb.append(String.format("Status           : %s\n", invoice.getStatus()));
+        sb.append(String.format("Issue Date       : %s\n", invoice.getIssueDate()));
+        sb.append(String.format("Due Date         : %s\n", invoice.getDueDate()));
+        if (invoice.getPaidAt() != null) {
+            sb.append(String.format("Paid At          : %s\n", invoice.getPaidAt()));
+        }
+        sb.append(String.format("Customer ID      : %s\n", invoice.getCustomerId()));
+        sb.append(String.format("Customer Name    : %s\n", invoice.getCustomerName()));
+        sb.append(String.format("Customer Email   : %s\n", invoice.getCustomerEmail()));
+        sb.append(String.format("Billing Period   : %s to %s\n", invoice.getBillingPeriodStart(), invoice.getBillingPeriodEnd()));
+        if (invoice.getSubscription() != null) {
+            sb.append(String.format("Subscription Ref : %s\n", invoice.getSubscription().getSubscriptionNumber()));
+        }
+        sb.append("--------------------------------------------------------------------------------\n");
+        sb.append(String.format("%-4s %-28s %-6s %-10s %-8s %-8s %-10s\n", "#", "Product", "Qty", "Price", "Disc", "Tax %", "Total"));
+        sb.append("--------------------------------------------------------------------------------\n");
+
+        int lineNum = 1;
+        for (InvoiceLine line : invoice.getLines()) {
+            sb.append(String.format("%-4d %-28s %-6s %-10s %-8s %-8s %-10s\n",
+                    lineNum++,
+                    line.getProductName() != null && line.getProductName().length() > 28 ? line.getProductName().substring(0, 25) + "..." : line.getProductName(),
+                    line.getQuantity(),
+                    line.getUnitPrice(),
+                    line.getDiscount(),
+                    line.getTaxRate(),
+                    line.getTotalAmount()));
+        }
+
+        sb.append("--------------------------------------------------------------------------------\n");
+        sb.append(String.format("Subtotal        : %s %s\n", invoice.getCurrency(), invoice.getSubtotal()));
+        sb.append(String.format("Tax Amount      : %s %s\n", invoice.getCurrency(), invoice.getTaxAmount()));
+        sb.append(String.format("Discount Amount : %s %s\n", invoice.getCurrency(), invoice.getDiscountAmount()));
+        sb.append(String.format("Total Amount    : %s %s\n", invoice.getCurrency(), invoice.getTotalAmount()));
+        sb.append(String.format("Amount Paid     : %s %s\n", invoice.getCurrency(), invoice.getAmountPaid()));
+        sb.append(String.format("Balance Due     : %s %s\n", invoice.getCurrency(), invoice.getAmountDue()));
+        sb.append("================================================================================\n");
+
+        return sb.toString();
+    }
+
+    @Override
+    public void sendInvoice(Long id) {
+        Invoice invoice = invoiceRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Invoice", "id", id));
+        notificationService.sendInvoiceNotification(invoice);
+        log.info("Invoice {} sent via notification gateway", invoice.getInvoiceNumber());
     }
 
     private InvoiceResponse mapToResponse(Invoice invoice) {

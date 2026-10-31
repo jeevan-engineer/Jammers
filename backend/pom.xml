@@ -137,10 +137,14 @@
 							<goal>compile</goal>
 						</goals>
 						<configuration>
+							<compilerArgs>
+								<arg>-proc:full</arg>
+							</compilerArgs>
 							<annotationProcessorPaths>
 								<path>
 									<groupId>org.projectlombok</groupId>
 									<artifactId>lombok</artifactId>
+									<version>1.18.48</version>
 								</path>
 							</annotationProcessorPaths>
 						</configuration>
@@ -152,10 +156,14 @@
 							<goal>testCompile</goal>
 						</goals>
 						<configuration>
+							<compilerArgs>
+								<arg>-proc:full</arg>
+							</compilerArgs>
 							<annotationProcessorPaths>
 								<path>
 									<groupId>org.projectlombok</groupId>
 									<artifactId>lombok</artifactId>
+									<version>1.18.48</version>
 								</path>
 							</annotationProcessorPaths>
 						</configuration>
