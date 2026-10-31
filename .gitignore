@@ -1,0 +1,15 @@
+# Local configuration and environment secrets
+.env
+*.env
+application-local.properties
+config/application-local.properties
+
+# Build artifacts
+target/
+*.class
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.DS_Store

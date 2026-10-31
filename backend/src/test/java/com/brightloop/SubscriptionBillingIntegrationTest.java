@@ -9,10 +9,6 @@ import com.brightloop.dto.SubscriptionLineDto;
 import com.brightloop.dto.SubscriptionStatusUpdateRequest;
 import com.brightloop.enums.InvoiceStatus;
 import com.brightloop.enums.SubscriptionStatus;
-import com.brightloop.repository.InvoiceRepository;
-import com.brightloop.repository.PaymentRepository;
-import com.brightloop.repository.QuotationTemplateRepository;
-import com.brightloop.repository.SubscriptionRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
@@ -21,8 +17,8 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -36,7 +32,6 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.startsWith;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -59,25 +54,15 @@ public class SubscriptionBillingIntegrationTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @Autowired
-    private ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper = new ObjectMapper()
+            .registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule())
+            .disable(com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
-    @Autowired
-    private QuotationTemplateRepository templateRepository;
-
-    @Autowired
-    private SubscriptionRepository subscriptionRepository;
-
-    @Autowired
-    private InvoiceRepository invoiceRepository;
-
-    @Autowired
-    private PaymentRepository paymentRepository;
-
-    // Static variables shared across ordered lifecycle test steps
+    // Shared across ordered test steps
     private static Long templateId;
     private static Long subscriptionId;
     private static Long invoice10kId;
+    private static final long RUN_ID = System.currentTimeMillis() % 100000;
 
     // -------------------------------------------------------------------------
     // SCENARIO A: Subscription Lifecycle & Quotation Template
@@ -97,7 +82,7 @@ public class SubscriptionBillingIntegrationTest {
                 .build();
 
         QuotationTemplateDto templateRequest = QuotationTemplateDto.builder()
-                .name("Standard Enterprise SaaS Plan")
+                .name("Enterprise SaaS Plan " + RUN_ID)
                 .description("Preconfigured 12-month recurring template")
                 .recurringInterval("MONTHLY")
                 .duration(12)
@@ -112,7 +97,7 @@ public class SubscriptionBillingIntegrationTest {
                         .content(objectMapper.writeValueAsString(templateRequest)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id", notNullValue()))
-                .andExpect(jsonPath("$.name", is("Standard Enterprise SaaS Plan")))
+                .andExpect(jsonPath("$.name", is("Enterprise SaaS Plan " + RUN_ID)))
                 .andExpect(jsonPath("$.lines", hasSize(1)))
                 .andReturn();
 
@@ -136,9 +121,9 @@ public class SubscriptionBillingIntegrationTest {
                 .build();
 
         SubscriptionCreateRequest request = SubscriptionCreateRequest.builder()
-                .customerId(501L)
-                .customerName("Global Tech Corp")
-                .customerEmail("billing@globaltech.com")
+                .customerId(501L + RUN_ID)
+                .customerName("Global Tech Corp " + RUN_ID)
+                .customerEmail("billing" + RUN_ID + "@globaltech.com")
                 .quotationTemplateId(templateId)
                 .billingInterval("MONTHLY")
                 .intervalCount(1)
@@ -184,7 +169,7 @@ public class SubscriptionBillingIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(SubscriptionStatusUpdateRequest.builder()
                                 .status(SubscriptionStatus.CONFIRMED)
-                                .reason("Customer accepted quote")
+                                .reason("Quote approved by customer")
                                 .build())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status", is("CONFIRMED")));
@@ -208,11 +193,6 @@ public class SubscriptionBillingIntegrationTest {
     @Order(4)
     @DisplayName("Scenario B.1: Generate Invoice with exact financial math")
     void testCreateInvoiceWithCalculations() throws Exception {
-        // Line calculation:
-        // Quantity = 2.00, UnitPrice = 100.00 -> Gross = 200.00
-        // Discount = 10% -> 20.00 -> Subtotal = 180.00
-        // Tax = 18% -> 180 * 0.18 = 32.40
-        // Total = 180 + 32.40 = 212.40
         InvoiceLineDto line = InvoiceLineDto.builder()
                 .productId(301L)
                 .productName("Software License Add-on")
@@ -224,9 +204,9 @@ public class SubscriptionBillingIntegrationTest {
 
         InvoiceCreateRequest request = InvoiceCreateRequest.builder()
                 .subscriptionId(subscriptionId)
-                .customerId(501L)
-                .customerName("Global Tech Corp")
-                .customerEmail("billing@globaltech.com")
+                .customerId(501L + RUN_ID)
+                .customerName("Global Tech Corp " + RUN_ID)
+                .customerEmail("billing" + RUN_ID + "@globaltech.com")
                 .billingPeriodStart(LocalDate.of(2026, 11, 1))
                 .billingPeriodEnd(LocalDate.of(2026, 11, 30))
                 .status(InvoiceStatus.UNPAID)
@@ -252,7 +232,6 @@ public class SubscriptionBillingIntegrationTest {
     @Order(5)
     @DisplayName("Scenario B.2: Anti-Double-Billing Guard blocks duplicate interval")
     void testAntiDoubleBillingGuard() throws Exception {
-        // Attempting to generate another invoice for the same subscription and period [2026-11-01 to 2026-11-30]
         InvoiceLineDto line = InvoiceLineDto.builder()
                 .productId(301L)
                 .productName("Duplicate Attempt")
@@ -262,7 +241,7 @@ public class SubscriptionBillingIntegrationTest {
 
         InvoiceCreateRequest duplicateRequest = InvoiceCreateRequest.builder()
                 .subscriptionId(subscriptionId)
-                .customerId(501L)
+                .customerId(501L + RUN_ID)
                 .billingPeriodStart(LocalDate.of(2026, 11, 1))
                 .billingPeriodEnd(LocalDate.of(2026, 11, 30))
                 .lines(List.of(line))
@@ -290,9 +269,9 @@ public class SubscriptionBillingIntegrationTest {
                 .build();
 
         InvoiceCreateRequest request = InvoiceCreateRequest.builder()
-                .customerId(701L)
-                .customerName("Nexus Enterprises")
-                .customerEmail("nexus@corp.com")
+                .customerId(701L + RUN_ID)
+                .customerName("Nexus Enterprises " + RUN_ID)
+                .customerEmail("nexus" + RUN_ID + "@corp.com")
                 .billingPeriodStart(LocalDate.of(2026, 12, 1))
                 .billingPeriodEnd(LocalDate.of(2026, 12, 31))
                 .status(InvoiceStatus.UNPAID)
@@ -320,10 +299,10 @@ public class SubscriptionBillingIntegrationTest {
     void testRecordPartialPayment() throws Exception {
         PaymentRecordRequest request = PaymentRecordRequest.builder()
                 .invoiceId(invoice10kId)
-                .customerId(701L)
+                .customerId(701L + RUN_ID)
                 .amount(new BigDecimal("4000.00"))
                 .currency("INR")
-                .transactionReference("TXN-PARTIAL-4000")
+                .transactionReference("TXN-PARTIAL-" + RUN_ID)
                 .build();
 
         mockMvc.perform(post("/api/v1/payments")
@@ -348,10 +327,10 @@ public class SubscriptionBillingIntegrationTest {
     void testRecordFullSettlement() throws Exception {
         PaymentRecordRequest request = PaymentRecordRequest.builder()
                 .invoiceId(invoice10kId)
-                .customerId(701L)
+                .customerId(701L + RUN_ID)
                 .amount(new BigDecimal("6000.00"))
                 .currency("INR")
-                .transactionReference("TXN-SETTLE-6000")
+                .transactionReference("TXN-SETTLE-" + RUN_ID)
                 .build();
 
         mockMvc.perform(post("/api/v1/payments")
@@ -376,7 +355,7 @@ public class SubscriptionBillingIntegrationTest {
     void testOverpaymentAttemptGuard() throws Exception {
         PaymentRecordRequest overpaymentRequest = PaymentRecordRequest.builder()
                 .invoiceId(invoice10kId)
-                .customerId(701L)
+                .customerId(701L + RUN_ID)
                 .amount(new BigDecimal("1000.00"))
                 .currency("INR")
                 .build();
