@@ -1,6 +1,6 @@
 package com.brightloop.dto;
 
-import com.brightloop.entity.ProductType;
+import com.brightloop.enums.ProductType;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;

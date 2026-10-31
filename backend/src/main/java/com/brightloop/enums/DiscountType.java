@@ -1,4 +1,6 @@
 package com.brightloop.enums;
 
-public class DiscountType {
+public enum DiscountType {
+    FIXED,
+    PERCENTAGE
 }

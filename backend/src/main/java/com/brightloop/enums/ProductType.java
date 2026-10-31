@@ -1,4 +1,4 @@
-package com.brightloop.entity;
+package com.brightloop.enums;
 
 public enum ProductType {
     SERVICE,

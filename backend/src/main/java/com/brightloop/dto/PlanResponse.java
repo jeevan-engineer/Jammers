@@ -1,6 +1,6 @@
 package com.brightloop.dto;
 
-import com.brightloop.entity.BillingPeriod;
+import com.brightloop.enums.BillingPeriod;
 import lombok.Builder;
 import lombok.Data;
 
