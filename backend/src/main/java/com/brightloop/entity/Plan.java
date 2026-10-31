@@ -1,5 +1,6 @@
 package com.brightloop.entity;
 
+import com.brightloop.enums.BillingPeriod;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;

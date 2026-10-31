@@ -1,6 +1,6 @@
 package com.brightloop.dto;
 
-import com.brightloop.entity.ProductType;
+import com.brightloop.enums.ProductType;
 import lombok.Builder;
 import lombok.Data;
 

@@ -1,7 +1,7 @@
 package com.brightloop.repository;
 
 import com.brightloop.entity.Product;
-import com.brightloop.entity.ProductType;
+import com.brightloop.enums.ProductType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
