@@ -39,12 +39,8 @@ function Auth({ onAuthenticated }) {
       return;
     }
 
-    // Backend authentication will be connected later.
-    setMessage(
-      isLogin
-        ? "Login UI is ready. Backend authentication is not connected yet."
-        : "Registration UI is ready. Backend registration is not connected yet."
-    );
+    // TODO: replace with real API call — onAuthenticated(role) from backend response.
+    onAuthenticated("admin");
   };
 
   const updateField = (field, value) => {
@@ -232,6 +228,51 @@ function Auth({ onAuthenticated }) {
           <p className="auth-security">
             Secure access to your Brightloop workspace
           </p>
+
+          {/* ── Demo Access ────────────────────────────────── */}
+          <div className="auth-demo-section">
+            <div className="auth-demo-divider">
+              <span>or try a demo</span>
+            </div>
+            <p className="auth-demo-note">
+              No account needed — select a role to explore the dashboard.
+            </p>
+            <div className="auth-demo-buttons">
+              <button
+                type="button"
+                className="auth-demo-btn auth-demo-admin"
+                onClick={() => onAuthenticated("admin")}
+              >
+                <span className="auth-demo-icon">🔐</span>
+                <span>
+                  <strong>Administrator</strong>
+                  <small>Full system access</small>
+                </span>
+              </button>
+              <button
+                type="button"
+                className="auth-demo-btn auth-demo-staff"
+                onClick={() => onAuthenticated("staff")}
+              >
+                <span className="auth-demo-icon">👤</span>
+                <span>
+                  <strong>Staff Member</strong>
+                  <small>Customer management</small>
+                </span>
+              </button>
+              <button
+                type="button"
+                className="auth-demo-btn auth-demo-customer"
+                onClick={() => onAuthenticated("customer")}
+              >
+                <span className="auth-demo-icon">🏢</span>
+                <span>
+                  <strong>Customer</strong>
+                  <small>Subscription portal</small>
+                </span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

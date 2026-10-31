@@ -30,7 +30,7 @@ public record CustomerRequest(
         @Size(max = 150, message = "Email must not exceed 150 characters")
         String email,
 
-        @Pattern(regexp = "^\\d{7,15}$",
+        @Pattern(regexp = "^(?:\\d{7,15})?$",
                  message = "Phone number must be between 7 and 15 digits")
         String phone,
 

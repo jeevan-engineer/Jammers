@@ -18,6 +18,8 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
 
     boolean existsByPaymentNumber(String paymentNumber);
 
+    boolean existsByTransactionReference(String transactionReference);
+
     List<Payment> findByInvoiceId(Long invoiceId);
 
     Page<Payment> findByCustomerId(Long customerId, Pageable pageable);
@@ -25,5 +27,10 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     @Query("SELECT COALESCE(SUM(p.amount), 0) FROM Payment p WHERE p.status = 'SUCCESS'")
     BigDecimal sumTotalCollected();
 
+    @Query("SELECT COALESCE(SUM(p.amount), 0) FROM Payment p WHERE p.status = 'SUCCESS' AND p.paymentDate >= :start AND p.paymentDate <= :end")
+    BigDecimal sumTotalCollectedBetween(@org.springframework.data.repository.query.Param("start") java.time.LocalDateTime start, @org.springframework.data.repository.query.Param("end") java.time.LocalDateTime end);
+
     List<Payment> findTop10ByOrderByPaymentDateDesc();
+
+    Page<Payment> findAllByOrderByPaymentDateDesc(Pageable pageable);
 }

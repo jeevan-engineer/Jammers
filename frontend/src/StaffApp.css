@@ -1,0 +1,267 @@
+/* ── Staff Portal – additional styles (extends App.css) ──────────────────── */
+
+/* Topbar avatar accent */
+.staff-topbar-avatar {
+  background: #3d5a9e !important;
+  color: white !important;
+}
+
+/* Identity card in sidebar */
+.staff-identity-card {
+  background: #202e45;
+  border: 1px solid #344158;
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 22px;
+}
+
+.staff-identity-card strong {
+  font-size: 12px;
+  color: white;
+  display: block;
+}
+
+.staff-identity-card small {
+  font-size: 10px;
+  color: #91a0b7;
+}
+
+.staff-id-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #3d5a9e;
+  color: white;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+/* Logout button */
+.staff-logout-btn {
+  color: #f87171 !important;
+  margin-top: 6px;
+}
+
+.staff-logout-btn:hover {
+  background: rgba(248, 113, 113, 0.12) !important;
+  color: #f87171 !important;
+}
+
+/* Stat card trend text */
+.staff-trend-up   { font-size: 10px; color: #16a36a; margin: 0; }
+.staff-trend-down { font-size: 10px; color: #dc4c4c; margin: 0; }
+
+/* Status badges */
+.staff-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  white-space: nowrap;
+}
+
+.sbadge-active    { background: #dcfce7; color: #15803d; }
+.sbadge-trial     { background: #fef3c7; color: #92400e; }
+.sbadge-overdue   { background: #fee2e2; color: #b91c1c; }
+.sbadge-cancelled { background: #f1f5f9; color: #64748b; }
+.sbadge-low       { background: #e0f2fe; color: #0369a1; }
+
+/* Pending tasks count badge */
+.staff-badge-count {
+  background: #526ce5;
+  color: white;
+  border-radius: 20px;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* Task list */
+.staff-task-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.staff-task-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  background: #f8f9fc;
+  border-radius: 8px;
+  border: 1px solid #edf0f5;
+}
+
+.staff-task-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.task-icon-invoice { background: #ede9fe; color: #5b21b6; }
+.task-icon-renewal { background: #dbeafe; color: #1e40af; }
+
+.staff-task-body { flex: 1; }
+.staff-task-body p     { font-size: 12px; color: #374151; margin: 0 0 3px; }
+.staff-task-body small { font-size: 10px; color: #94a3b8; }
+
+/* Activity list */
+.staff-activity-list {
+  margin-top: 18px;
+}
+
+.staff-activity-item {
+  display: flex;
+  gap: 14px;
+  padding: 12px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.staff-activity-item:last-child { border-bottom: none; }
+
+.staff-activity-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #526ce5;
+  margin-top: 5px;
+  flex-shrink: 0;
+}
+
+.staff-activity-item p     { font-size: 12px; margin: 0 0 2px; color: #374151; }
+.staff-activity-item small { font-size: 11px; color: #64748b; display: block; }
+
+.staff-activity-time {
+  display: block;
+  font-size: 10px;
+  color: #94a3b8;
+  margin-top: 3px;
+}
+
+/* Quick actions */
+.staff-quick-panel {
+  margin-top: 20px;
+}
+
+.staff-quick-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.staff-quick-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 22px 14px;
+  border: 1px solid #e8edf5;
+  border-radius: 10px;
+  background: #f8f9fc;
+  cursor: pointer;
+  transition: all 180ms ease;
+  text-align: center;
+  color: #374151;
+}
+
+.staff-quick-card svg    { color: #526ce5; }
+.staff-quick-card strong { font-size: 12px; display: block; }
+.staff-quick-card small  { font-size: 10px; color: #94a3b8; }
+
+.staff-quick-card:hover {
+  background: white;
+  border-color: #526ce5;
+  box-shadow: 0 4px 14px rgba(82, 108, 229, 0.12);
+  transform: translateY(-2px);
+}
+
+/* Profile panel */
+.staff-profile-panel {
+  max-width: 540px;
+  padding: 28px;
+}
+
+.staff-profile-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 26px;
+  padding-bottom: 22px;
+  border-bottom: 1px solid #edf0f5;
+}
+
+.staff-profile-avatar-lg {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #3d5a9e;
+  color: white;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.staff-profile-header h3  { margin: 0 0 4px; font-size: 18px; }
+.staff-profile-header .subtitle { margin: 0; }
+
+.staff-profile-fields {
+  display: grid;
+  gap: 16px;
+}
+
+.staff-profile-field { display: grid; gap: 7px; }
+
+.staff-profile-field label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.staff-profile-field input {
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 13px;
+  color: #17243a;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.staff-profile-field input:focus {
+  border-color: #526ce5;
+  box-shadow: 0 0 0 3px rgba(82, 108, 229, 0.08);
+}
+
+.staff-profile-field input[readonly] {
+  background: #f8f9fc;
+  color: #94a3b8;
+  cursor: default;
+}
+
+/* Responsive */
+@media (max-width: 1100px) {
+  .staff-quick-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 700px) {
+  .staff-quick-grid { grid-template-columns: repeat(2, 1fr); }
+}
+

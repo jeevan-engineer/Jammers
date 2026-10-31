@@ -42,6 +42,7 @@ public class SubscriptionResponse {
     private LocalDateTime cancelledAt;
     private String cancellationReason;
     private LocalDateTime pausedAt;
+    private LocalDate quoteValidUntil;
     private BigDecimal subtotal;
     private BigDecimal taxAmount;
     private BigDecimal discountAmount;

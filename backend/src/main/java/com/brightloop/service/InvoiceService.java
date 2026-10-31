@@ -24,4 +24,8 @@ public interface InvoiceService {
     InvoiceResponse cancelInvoice(Long id, String reason);
 
     List<InvoiceResponse> getOverdueInvoices();
+
+    String generatePrintableInvoice(Long id);
+
+    void sendInvoice(Long id);
 }

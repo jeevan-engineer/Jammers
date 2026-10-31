@@ -121,8 +121,9 @@ public class SubscriptionLine {
         BigDecimal gross = qty.multiply(price);
 
         if (this.discount != null && this.discount.compareTo(BigDecimal.ZERO) > 0) {
+            BigDecimal discRate = this.discount.min(BigDecimal.valueOf(100));
             BigDecimal discountMultiplier = BigDecimal.ONE.subtract(
-                    this.discount.divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP)
+                    discRate.divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP)
             );
             this.subtotal = gross.multiply(discountMultiplier).setScale(2, RoundingMode.HALF_UP);
         } else {

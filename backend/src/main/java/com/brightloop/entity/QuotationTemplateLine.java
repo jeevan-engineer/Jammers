@@ -69,6 +69,10 @@ public class QuotationTemplateLine {
     private BigDecimal discount = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
 
     @Builder.Default
+    @Column(name = "tax_rate", nullable = false, precision = 12, scale = 2)
+    private BigDecimal taxRate = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+
+    @Builder.Default
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal subtotal = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
 

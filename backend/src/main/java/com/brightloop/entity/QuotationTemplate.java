@@ -61,6 +61,10 @@ public class QuotationTemplate {
     private String durationUnit = "MONTHS";
 
     @Builder.Default
+    @Column(name = "validity_days", nullable = false)
+    private Integer validityDays = 30;
+
+    @Builder.Default
     @Column(name = "auto_close", nullable = false)
     private Boolean autoClose = false;
 
@@ -97,6 +101,9 @@ public class QuotationTemplate {
         }
         if (this.durationUnit == null) {
             this.durationUnit = "MONTHS";
+        }
+        if (this.validityDays == null) {
+            this.validityDays = 30;
         }
         if (this.autoClose == null) {
             this.autoClose = false;

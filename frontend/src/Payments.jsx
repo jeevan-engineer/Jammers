@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { Search, Plus, X } from "lucide-react";
+import { Search, Plus, X, CreditCard } from "lucide-react";
 
 function Payments() {
   const [payments, setPayments] = useState([]);
@@ -48,11 +48,12 @@ function Payments() {
     }).format(Number(amount));
 
   return (
-    <div className="module-page">
-      <div className="module-header">
+    <section>
+      <div className="page-heading">
         <div>
-          <h2>Payments</h2>
-          <p>Track and manage customer payments.</p>
+          <p className="breadcrumb">Management / Payments</p>
+          <h1>Payments</h1>
+          <p className="subtitle">Track and manage customer payments.</p>
         </div>
 
         <button className="primary-button" onClick={() => setShowForm(true)}>
@@ -60,8 +61,8 @@ function Payments() {
         </button>
       </div>
 
-      <div className="module-toolbar">
-        <div className="search-box">
+      <div className="customer-toolbar">
+        <div className="customer-search">
           <Search size={17} />
           <input
             placeholder="Search payments..."
@@ -69,125 +70,141 @@ function Payments() {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
+        <span>{payments.length} payments</span>
       </div>
 
-      <div className="table-container">
-        <table>
-          <thead>
-            <tr>
-              <th>Customer</th>
-              <th>Invoice</th>
-              <th>Payment Method</th>
-              <th>Payment Date</th>
-              <th>Amount</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {filteredPayments.length === 0 ? (
+      <div className="panel customer-table-panel">
+        <div className="table-scroll">
+          <table>
+            <thead>
               <tr>
-                <td colSpan="6" className="empty-table">
-                  No payments found. Record your first payment.
-                </td>
+                <th>Customer</th>
+                <th>Invoice</th>
+                <th>Payment Method</th>
+                <th>Payment Date</th>
+                <th>Amount</th>
+                <th>Status</th>
               </tr>
-            ) : (
-              filteredPayments.map((payment) => (
-                <tr key={payment.id}>
-                  <td>{payment.customer}</td>
-                  <td>{payment.invoice}</td>
-                  <td>{payment.paymentMethod}</td>
-                  <td>{payment.paymentDate}</td>
-                  <td>{formatAmount(payment.amount)}</td>
-                  <td>
-                    <span className="payment-success">
-                      {payment.status}
-                    </span>
+            </thead>
+
+            <tbody>
+              {filteredPayments.length === 0 ? (
+                <tr>
+                  <td colSpan="6" className="table-empty">
+                    <CreditCard size={28} />
+                    <strong>No payments found</strong>
+                    <p>Record your first payment to get started.</p>
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : (
+                filteredPayments.map((payment) => (
+                  <tr key={payment.id}>
+                    <td>{payment.customer}</td>
+                    <td>{payment.invoice}</td>
+                    <td>{payment.paymentMethod}</td>
+                    <td>{payment.paymentDate}</td>
+                    <td>{formatAmount(payment.amount)}</td>
+                    <td>
+                      <span className="payment-success">
+                        {payment.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {showForm && (
-        <div className="modal-overlay">
+        <div className="customer-modal-overlay">
           <div className="customer-modal">
-            <div className="modal-header">
+            <div className="customer-modal-header">
               <div>
-                <h3>Record Payment</h3>
+                <h2>Record Payment</h2>
                 <p>Enter payment details.</p>
               </div>
               <button
-                className="close-button"
+                className="icon-button"
                 onClick={() => setShowForm(false)}
+                aria-label="Close"
               >
-                <X size={20} />
+                <X size={19} />
               </button>
             </div>
 
             <form onSubmit={addPayment}>
-              <label>Customer Name</label>
-              <input
-                required
-                value={form.customer}
-                onChange={(e) =>
-                  setForm({ ...form, customer: e.target.value })
-                }
-                placeholder="Enter customer name"
-              />
+              <label>
+                Customer Name
+                <input
+                  required
+                  value={form.customer}
+                  onChange={(e) =>
+                    setForm({ ...form, customer: e.target.value })
+                  }
+                  placeholder="Enter customer name"
+                />
+              </label>
 
-              <label>Invoice Number</label>
-              <input
-                required
-                value={form.invoice}
-                onChange={(e) =>
-                  setForm({ ...form, invoice: e.target.value })
-                }
-                placeholder="Example: INV-0001"
-              />
+              <label>
+                Invoice Number
+                <input
+                  required
+                  value={form.invoice}
+                  onChange={(e) =>
+                    setForm({ ...form, invoice: e.target.value })
+                  }
+                  placeholder="Example: INV-0001"
+                />
+              </label>
 
-              <label>Amount (₹)</label>
-              <input
-                required
-                type="number"
-                min="0.01"
-                step="0.01"
-                value={form.amount}
-                onChange={(e) =>
-                  setForm({ ...form, amount: e.target.value })
-                }
-                placeholder="Enter amount"
-              />
+              <label>
+                Amount (₹)
+                <input
+                  required
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  value={form.amount}
+                  onChange={(e) =>
+                    setForm({ ...form, amount: e.target.value })
+                  }
+                  placeholder="Enter amount"
+                />
+              </label>
 
-              <label>Payment Method</label>
-              <select
-                value={form.paymentMethod}
-                onChange={(e) =>
-                  setForm({ ...form, paymentMethod: e.target.value })
-                }
-              >
-                <option value="UPI">UPI</option>
-                <option value="CARD">Card</option>
-                <option value="BANK_TRANSFER">Bank Transfer</option>
-                <option value="CASH">Cash</option>
-              </select>
+              <label>
+                Payment Method
+                <select
+                  value={form.paymentMethod}
+                  onChange={(e) =>
+                    setForm({ ...form, paymentMethod: e.target.value })
+                  }
+                >
+                  <option value="UPI">UPI</option>
+                  <option value="CARD">Card</option>
+                  <option value="BANK_TRANSFER">Bank Transfer</option>
+                  <option value="CASH">Cash</option>
+                </select>
+              </label>
 
-              <label>Payment Date</label>
-              <input
-                required
-                type="date"
-                value={form.paymentDate}
-                onChange={(e) =>
-                  setForm({ ...form, paymentDate: e.target.value })
-                }
-              />
+              <label>
+                Payment Date
+                <input
+                  required
+                  type="date"
+                  value={form.paymentDate}
+                  onChange={(e) =>
+                    setForm({ ...form, paymentDate: e.target.value })
+                  }
+                />
+              </label>
 
-              <div className="modal-actions">
+              <div className="customer-modal-actions">
                 <button
                   type="button"
-                  className="cancel-button"
+                  className="select-button"
                   onClick={() => setShowForm(false)}
                 >
                   Cancel
@@ -200,7 +217,7 @@ function Payments() {
           </div>
         </div>
       )}
-    </div>
+    </section>
   );
 }
 

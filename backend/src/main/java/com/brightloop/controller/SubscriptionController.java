@@ -76,6 +76,37 @@ public class SubscriptionController {
         return ResponseEntity.ok(subscriptionService.closeSubscription(id, reason));
     }
 
+    @PostMapping("/{id}/pause")
+    public ResponseEntity<SubscriptionResponse> pauseSubscription(
+            @PathVariable Long id,
+            @RequestParam(required = false, defaultValue = "Paused via API request") String reason
+    ) {
+        return ResponseEntity.ok(subscriptionService.pauseSubscription(id, reason));
+    }
+
+    @PostMapping("/{id}/resume")
+    public ResponseEntity<SubscriptionResponse> resumeSubscription(@PathVariable Long id) {
+        return ResponseEntity.ok(subscriptionService.resumeSubscription(id));
+    }
+
+    @PostMapping("/{id}/renew")
+    public ResponseEntity<SubscriptionResponse> renewSubscription(
+            @PathVariable Long id,
+            @RequestBody(required = false) com.brightloop.dto.SubscriptionRenewalRequest request
+    ) {
+        return ResponseEntity.ok(subscriptionService.renewSubscription(id, request));
+    }
+
+    @PostMapping("/{id}/generate-invoice")
+    public ResponseEntity<Map<String, Object>> generateSingleInvoice(@PathVariable Long id) {
+        Long invoiceId = subscriptionService.generateSingleInvoice(id);
+        return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
+                "success", true,
+                "message", "Invoice generated successfully for subscription",
+                "invoiceId", invoiceId
+        ));
+    }
+
     @PostMapping("/generate-billing")
     public ResponseEntity<Map<String, Object>> generateBillingInvoices() {
         List<Long> generatedIds = subscriptionService.generateBillingInvoices();

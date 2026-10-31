@@ -5,6 +5,8 @@ import Taxes from "./Taxes.jsx";
 import Payments from "./Payments.jsx";
 import Discounts from "./Discounts.jsx";
 import Auth from "./Auth.jsx";
+import StaffApp from "./StaffApp.jsx";
+import CustomerApp from "./CustomerApp.jsx";
 
 import Users from "./Users.jsx";
 import Plans from "./Plans.jsx";
@@ -24,25 +26,14 @@ import {
   Bell,
   Search,
   Menu,
-  ArrowUpRight,
-  ArrowDownRight,
   Wallet,
   CircleAlert,
   CalendarDays,
   Plus,
   ChevronDown,
   Activity,
+  LogOut,
 } from "lucide-react";
-
-import {
-  ResponsiveContainer,
-  AreaChart,
-  Area,
-  CartesianGrid,
-  XAxis,
-  YAxis,
-  Tooltip,
-} from "recharts";
 
 import "./App.css";
 
@@ -78,43 +69,82 @@ const stats = [
   { label: "Overdue Invoices", value: "—", icon: FileText, note: "Awaiting API data" },
 ];
 
-function Sidebar({ activePage, setActivePage, open, setOpen }) {
+
+
+function Sidebar({
+  activePage,
+  setActivePage,
+  open,
+  setOpen,
+  collapsed,
+  setCollapsed,
+  onLogout,
+}) {
   return (
     <>
-      {open && <div className="sidebar-overlay" onClick={() => setOpen(false)} />}
-      <aside className={`sidebar ${open ? "sidebar-open" : ""}`}>
+      {open && (
+        <div
+          className="sidebar-overlay"
+          onClick={() => setOpen(false)}
+        />
+      )}
+
+      <aside
+        className={`sidebar ${open ? "sidebar-open" : ""} ${
+          collapsed ? "sidebar-collapsed" : ""
+        }`}
+      >
         <div className="brand">
           <div className="brand-icon">B</div>
-          <div>
-            <h2>brightloop</h2>
-            <span>SOFTWARE</span>
-          </div>
+
+          {!collapsed && (
+            <div>
+              <h2>brightloop</h2>
+              <span>SOFTWARE</span>
+            </div>
+          )}
+
+          <button
+            className="sidebar-toggle"
+            onClick={() => setCollapsed(!collapsed)}
+            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            <Menu size={19} />
+          </button>
         </div>
 
-        <div className="workspace">
-          <div className="workspace-avatar">B</div>
-          <div>
-            <strong>Brightloop Workspace</strong>
-            <small>Business account</small>
+        {!collapsed && (
+          <div className="workspace">
+            <div className="workspace-avatar">B</div>
+            <div>
+              <strong>Brightloop Workspace</strong>
+              <small>Business account</small>
+            </div>
+            <ChevronDown size={15} />
           </div>
-          <ChevronDown size={15} />
-        </div>
+        )}
 
         <nav className="sidebar-nav">
           {navigation.map((group) => (
             <div className="nav-group" key={group.title}>
-              <p className="nav-heading">{group.title}</p>
+              {!collapsed && (
+                <p className="nav-heading">{group.title}</p>
+              )}
+
               {group.items.map(({ label, icon: Icon }) => (
                 <button
                   key={label}
-                  className={`nav-item ${activePage === label ? "active" : ""}`}
+                  title={collapsed ? label : ""}
+                  className={`nav-item ${
+                    activePage === label ? "active" : ""
+                  }`}
                   onClick={() => {
                     setActivePage(label);
                     setOpen(false);
                   }}
                 >
-                  <Icon size={18} />
-                  <span>{label}</span>
+                  <Icon size={19} />
+                  {!collapsed && <span>{label}</span>}
                 </button>
               ))}
             </div>
@@ -122,19 +152,35 @@ function Sidebar({ activePage, setActivePage, open, setOpen }) {
         </nav>
 
         <div className="sidebar-bottom">
-          <div className="help-card">
-            <Activity size={19} />
-            <strong>Need assistance?</strong>
-            <span>Contact your administrator for support.</span>
-          </div>
+          {!collapsed && (
+            <div className="help-card">
+              <Activity size={19} />
+              <strong>Need assistance?</strong>
+              <span>Contact your administrator for support.</span>
+            </div>
+          )}
+
           <div className="profile">
             <div className="profile-avatar">JN</div>
-            <div>
-              <strong>Administrator</strong>
-              <small>Workspace admin</small>
-            </div>
-            <ChevronDown size={15} />
+
+            {!collapsed && (
+              <div>
+                <strong>Administrator</strong>
+                <small>Workspace admin</small>
+              </div>
+            )}
+
+            {!collapsed && <ChevronDown size={15} />}
           </div>
+
+          <button
+            className="nav-item admin-logout-btn"
+            onClick={onLogout}
+            title="Sign out"
+          >
+            <LogOut size={18} />
+            {!collapsed && <span>Sign out</span>}
+          </button>
         </div>
       </aside>
     </>
@@ -254,15 +300,29 @@ function PlaceholderPage({ title }) {
 
 
 function App() {
-  const [activePage, setActivePage] = useState("Dashboard");
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [activePage,       setActivePage]       = useState("Dashboard");
+  const [sidebarOpen,      setSidebarOpen]      = useState(false);
+  const [userRole,         setUserRole]         = useState(null); // null | "admin" | "staff" | "customer"
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  // Show Login/Register page before opening the dashboard
-  if (!isAuthenticated) {
-    return <Auth onAuthenticated={() => setIsAuthenticated(true)} />;
+  // ── Auth gate ────────────────────────────────────────────────────────────
+  // onAuthenticated(role) is called by Auth — either from the demo buttons
+  // or (later) from a real backend response.  Replace the demo wiring with
+  // an API call that returns the user's actual role.
+  if (!userRole) {
+    return <Auth onAuthenticated={(role) => setUserRole(role)} />;
   }
 
+  // ── Role-based routing ───────────────────────────────────────────────────
+  if (userRole === "staff") {
+    return <StaffApp onLogout={() => setUserRole(null)} />;
+  }
+
+  if (userRole === "customer") {
+    return <CustomerApp onLogout={() => setUserRole(null)} />;
+  }
+
+  // ── Administrator dashboard (existing) ───────────────────────────────────
   return (
     <div className="app-shell">
       <Sidebar
@@ -270,9 +330,16 @@ function App() {
         setActivePage={setActivePage}
         open={sidebarOpen}
         setOpen={setSidebarOpen}
+        collapsed={sidebarCollapsed}
+        setCollapsed={setSidebarCollapsed}
+        onLogout={() => setUserRole(null)}
       />
 
-      <main className="main-content">
+      <main
+        className={`main-content ${
+          sidebarCollapsed ? "main-content-expanded" : ""
+        }`}
+      >
         <header className="topbar">
           <button className="mobile-menu" onClick={() => setSidebarOpen(true)}>
             <Menu size={21} />
@@ -296,6 +363,14 @@ function App() {
                 <small>Admin</small>
               </div>
             </div>
+
+            <button
+              className="icon-button admin-topbar-logout"
+              onClick={() => setUserRole(null)}
+              title="Sign out"
+            >
+              <LogOut size={19} />
+            </button>
           </div>
         </header>
 

@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { Search, Plus, X, Trash2 } from "lucide-react";
+import { Search, Plus, X, Trash2, Percent } from "lucide-react";
 
 function Taxes() {
   const [taxes, setTaxes] = useState([]);
@@ -38,11 +38,12 @@ function Taxes() {
   );
 
   return (
-    <div className="module-page">
-      <div className="module-header">
+    <section>
+      <div className="page-heading">
         <div>
-          <h2>Taxes</h2>
-          <p>Manage tax rates applied to your subscription plans.</p>
+          <p className="breadcrumb">Configuration / Taxes</p>
+          <h1>Taxes</h1>
+          <p className="subtitle">Manage tax rates applied to your subscription plans.</p>
         </div>
 
         <button className="primary-button" onClick={() => setShowForm(true)}>
@@ -50,8 +51,8 @@ function Taxes() {
         </button>
       </div>
 
-      <div className="module-toolbar">
-        <div className="search-box">
+      <div className="customer-toolbar">
+        <div className="customer-search">
           <Search size={17} />
           <input
             placeholder="Search taxes..."
@@ -59,106 +60,118 @@ function Taxes() {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
+        <span>{taxes.length} taxes</span>
       </div>
 
-      <div className="table-container">
-        <table>
-          <thead>
-            <tr>
-              <th>Tax Name</th>
-              <th>Rate</th>
-              <th>Description</th>
-              <th>Status</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {filteredTaxes.length === 0 ? (
+      <div className="panel customer-table-panel">
+        <div className="table-scroll">
+          <table>
+            <thead>
               <tr>
-                <td colSpan="5" className="empty-table">
-                  No taxes found. Add your first tax rate.
-                </td>
+                <th>Tax Name</th>
+                <th>Rate</th>
+                <th>Description</th>
+                <th>Status</th>
+                <th>Action</th>
               </tr>
-            ) : (
-              filteredTaxes.map((tax) => (
-                <tr key={tax.id}>
-                  <td>{tax.name}</td>
-                  <td>{tax.rate}%</td>
-                  <td>{tax.description || "—"}</td>
-                  <td>
-                    <span className="customer-status">{tax.status}</span>
-                  </td>
-                  <td>
-                    <button
-                      className="delete-button"
-                      onClick={() => deleteTax(tax.id)}
-                      title="Delete tax"
-                    >
-                      <Trash2 size={16} />
-                    </button>
+            </thead>
+
+            <tbody>
+              {filteredTaxes.length === 0 ? (
+                <tr>
+                  <td colSpan="5" className="table-empty">
+                    <Percent size={28} />
+                    <strong>No taxes found</strong>
+                    <p>Add your first tax rate to get started.</p>
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : (
+                filteredTaxes.map((tax) => (
+                  <tr key={tax.id}>
+                    <td>{tax.name}</td>
+                    <td>{tax.rate}%</td>
+                    <td>{tax.description || "—"}</td>
+                    <td>
+                      <span className="customer-status">{tax.status}</span>
+                    </td>
+                    <td>
+                      <button
+                        className="icon-button"
+                        onClick={() => deleteTax(tax.id)}
+                        title="Delete"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {showForm && (
-        <div className="modal-overlay">
+        <div className="customer-modal-overlay">
           <div className="customer-modal">
-            <div className="modal-header">
+            <div className="customer-modal-header">
               <div>
-                <h3>Add Tax Rate</h3>
+                <h2>Add Tax Rate</h2>
                 <p>Enter the tax details.</p>
               </div>
               <button
-                className="close-button"
+                className="icon-button"
                 onClick={() => setShowForm(false)}
+                aria-label="Close"
               >
-                <X size={20} />
+                <X size={19} />
               </button>
             </div>
 
             <form onSubmit={addTax}>
-              <label>Tax Name</label>
-              <input
-                required
-                value={form.name}
-                onChange={(e) =>
-                  setForm({ ...form, name: e.target.value })
-                }
-                placeholder="Example: GST"
-              />
+              <label>
+                Tax Name
+                <input
+                  required
+                  value={form.name}
+                  onChange={(e) =>
+                    setForm({ ...form, name: e.target.value })
+                  }
+                  placeholder="Example: GST"
+                />
+              </label>
 
-              <label>Tax Rate (%)</label>
-              <input
-                required
-                type="number"
-                min="0"
-                max="100"
-                step="0.01"
-                value={form.rate}
-                onChange={(e) =>
-                  setForm({ ...form, rate: e.target.value })
-                }
-                placeholder="Example: 18"
-              />
+              <label>
+                Tax Rate (%)
+                <input
+                  required
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  value={form.rate}
+                  onChange={(e) =>
+                    setForm({ ...form, rate: e.target.value })
+                  }
+                  placeholder="Example: 18"
+                />
+              </label>
 
-              <label>Description</label>
-              <input
-                value={form.description}
-                onChange={(e) =>
-                  setForm({ ...form, description: e.target.value })
-                }
-                placeholder="Enter tax description"
-              />
+              <label>
+                Description
+                <input
+                  value={form.description}
+                  onChange={(e) =>
+                    setForm({ ...form, description: e.target.value })
+                  }
+                  placeholder="Enter tax description"
+                />
+              </label>
 
-              <div className="modal-actions">
+              <div className="customer-modal-actions">
                 <button
                   type="button"
-                  className="cancel-button"
+                  className="select-button"
                   onClick={() => setShowForm(false)}
                 >
                   Cancel
@@ -171,9 +184,8 @@ function Taxes() {
           </div>
         </div>
       )}
-    </div>
+    </section>
   );
 }
 
 export default Taxes;
-

@@ -39,7 +39,7 @@ public class PaymentServiceImpl implements PaymentService {
     public PaymentResponse recordPayment(PaymentRecordRequest request) {
         log.info("Recording payment of {} for invoice ID: {}", request.getAmount(), request.getInvoiceId());
 
-        Invoice invoice = invoiceRepository.findById(request.getInvoiceId())
+        Invoice invoice = invoiceRepository.findByIdForUpdate(request.getInvoiceId())
                 .orElseThrow(() -> new ResourceNotFoundException("Invoice", "id", request.getInvoiceId()));
 
         if (invoice.getStatus() == InvoiceStatus.PAID) {
@@ -59,6 +59,14 @@ public class PaymentServiceImpl implements PaymentService {
                     String.format("Payment amount %s exceeds outstanding balance %s for invoice %s",
                             request.getAmount(), invoice.getAmountDue(), invoice.getInvoiceNumber())
             );
+        }
+
+        if (request.getTransactionReference() != null && !request.getTransactionReference().isBlank()) {
+            if (paymentRepository.existsByTransactionReference(request.getTransactionReference().trim())) {
+                throw new BusinessValidationException(
+                        "Duplicate payment error: A payment with transaction reference '" + request.getTransactionReference() + "' already exists."
+                );
+            }
         }
 
         PaymentMethod paymentMethod = null;

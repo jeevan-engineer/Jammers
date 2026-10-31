@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { Search, Plus, X, Trash2 } from "lucide-react";
+import { Search, Plus, X, Trash2, UserCog } from "lucide-react";
 
 function Users() {
   const [users, setUsers] = useState([]);
@@ -38,11 +38,12 @@ function Users() {
   );
 
   return (
-    <div className="module-page">
-      <div className="module-header">
+    <section>
+      <div className="page-heading">
         <div>
-          <h2>Users</h2>
-          <p>Manage administrators and staff access.</p>
+          <p className="breadcrumb">Configuration / Users</p>
+          <h1>Users</h1>
+          <p className="subtitle">Manage administrators and staff access.</p>
         </div>
 
         <button className="primary-button" onClick={() => setShowForm(true)}>
@@ -50,8 +51,8 @@ function Users() {
         </button>
       </div>
 
-      <div className="module-toolbar">
-        <div className="search-box">
+      <div className="customer-toolbar">
+        <div className="customer-search">
           <Search size={17} />
           <input
             placeholder="Search users..."
@@ -59,100 +60,112 @@ function Users() {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
+        <span>{users.length} users</span>
       </div>
 
-      <div className="table-container">
-        <table>
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Email</th>
-              <th>Role</th>
-              <th>Status</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {filteredUsers.length === 0 ? (
+      <div className="panel customer-table-panel">
+        <div className="table-scroll">
+          <table>
+            <thead>
               <tr>
-                <td colSpan="5" className="empty-table">
-                  No users found. Add your first team member.
-                </td>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Action</th>
               </tr>
-            ) : (
-              filteredUsers.map((user) => (
-                <tr key={user.id}>
-                  <td>{user.name}</td>
-                  <td>{user.email}</td>
-                  <td>{user.role}</td>
-                  <td>
-                    <span className="customer-status">{user.status}</span>
-                  </td>
-                  <td>
-                    <button
-                      className="delete-button"
-                      onClick={() => deleteUser(user.id)}
-                      title="Delete user"
-                    >
-                      <Trash2 size={16} />
-                    </button>
+            </thead>
+
+            <tbody>
+              {filteredUsers.length === 0 ? (
+                <tr>
+                  <td colSpan="5" className="table-empty">
+                    <UserCog size={28} />
+                    <strong>No users found</strong>
+                    <p>Add your first team member to get started.</p>
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : (
+                filteredUsers.map((user) => (
+                  <tr key={user.id}>
+                    <td>{user.name}</td>
+                    <td>{user.email}</td>
+                    <td>{user.role}</td>
+                    <td>
+                      <span className="customer-status">{user.status}</span>
+                    </td>
+                    <td>
+                      <button
+                        className="icon-button"
+                        onClick={() => deleteUser(user.id)}
+                        title="Delete"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {showForm && (
-        <div className="modal-overlay">
+        <div className="customer-modal-overlay">
           <div className="customer-modal">
-            <div className="modal-header">
+            <div className="customer-modal-header">
               <div>
-                <h3>Add User</h3>
+                <h2>Add User</h2>
                 <p>Enter the team member's details.</p>
               </div>
               <button
-                className="close-button"
+                className="icon-button"
                 onClick={() => setShowForm(false)}
+                aria-label="Close"
               >
-                <X size={20} />
+                <X size={19} />
               </button>
             </div>
 
             <form onSubmit={addUser}>
-              <label>Full Name</label>
-              <input
-                required
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                placeholder="Enter full name"
-              />
+              <label>
+                Full Name
+                <input
+                  required
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  placeholder="Enter full name"
+                />
+              </label>
 
-              <label>Email Address</label>
-              <input
-                required
-                type="email"
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
-                placeholder="Enter email address"
-              />
+              <label>
+                Email Address
+                <input
+                  required
+                  type="email"
+                  value={form.email}
+                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  placeholder="Enter email address"
+                />
+              </label>
 
-              <label>Role</label>
-              <select
-                value={form.role}
-                onChange={(e) => setForm({ ...form, role: e.target.value })}
-              >
-                <option value="ADMIN">Admin</option>
-                <option value="MANAGER">Manager</option>
-                <option value="STAFF">Staff</option>
-              </select>
+              <label>
+                Role
+                <select
+                  value={form.role}
+                  onChange={(e) => setForm({ ...form, role: e.target.value })}
+                >
+                  <option value="ADMIN">Admin</option>
+                  <option value="MANAGER">Manager</option>
+                  <option value="STAFF">Staff</option>
+                </select>
+              </label>
 
-              <div className="modal-actions">
+              <div className="customer-modal-actions">
                 <button
                   type="button"
-                  className="cancel-button"
+                  className="select-button"
                   onClick={() => setShowForm(false)}
                 >
                   Cancel
@@ -165,7 +178,7 @@ function Users() {
           </div>
         </div>
       )}
-    </div>
+    </section>
   );
 }
 

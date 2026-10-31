@@ -8,9 +8,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
+import org.springframework.stereotype.Component;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -20,18 +23,10 @@ import java.util.Map;
 
 /**
  * Central exception handler for every controller in the application.
- *
- * @RestControllerAdvice = @ControllerAdvice + @ResponseBody, meaning every
- * handler method's return value is written directly to the HTTP response body
- * as JSON — no need for @ResponseBody on each method.
- *
- * Common error: if SecurityConfig does NOT delegate 401/403 to custom entry
- * points (RestAuthenticationEntryPoint / RestAccessDeniedHandler), Spring
- * Security intercepts the request before it reaches this handler.
- * AccessDeniedException IS handled here only when @PreAuthorize throws it
- * AFTER authentication — the pre-auth 401 goes through the entry point.
  */
+@Component("subscriptionGlobalExceptionHandler")
 @RestControllerAdvice
+@Order(Ordered.HIGHEST_PRECEDENCE)
 public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
@@ -164,9 +159,9 @@ public class GlobalExceptionHandler {
     // 404 — Resource not found
     // ----------------------------------------------------------------
 
-    @ExceptionHandler(ResourceNotFoundException.class)
+    @ExceptionHandler({ResourceNotFoundException.class, com.brightloop.exception.ResourceNotFoundException.class})
     public ResponseEntity<ApiError> handleResourceNotFound(
-            ResourceNotFoundException ex, HttpServletRequest request) {
+            Exception ex, HttpServletRequest request) {
 
         ApiError body = ApiError.of(
                 HttpStatus.NOT_FOUND.value(),
@@ -209,6 +204,23 @@ public class GlobalExceptionHandler {
                 request.getRequestURI()
         );
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(body);
+    }
+
+    // ----------------------------------------------------------------
+    // 400 — Member 3/4 BusinessValidationException
+    // ----------------------------------------------------------------
+
+    @ExceptionHandler(com.brightloop.exception.BusinessValidationException.class)
+    public ResponseEntity<ApiError> handleTeammateBusinessValidation(
+            com.brightloop.exception.BusinessValidationException ex, HttpServletRequest request) {
+
+        ApiError body = ApiError.of(
+                HttpStatus.BAD_REQUEST.value(),
+                HttpStatus.BAD_REQUEST.getReasonPhrase(),
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
     }
 
     // ----------------------------------------------------------------

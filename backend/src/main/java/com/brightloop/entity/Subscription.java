@@ -114,6 +114,9 @@ public class Subscription {
     @Column(name = "paused_at")
     private LocalDateTime pausedAt;
 
+    @Column(name = "quote_valid_until")
+    private LocalDate quoteValidUntil;
+
     @Builder.Default
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal subtotal = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);

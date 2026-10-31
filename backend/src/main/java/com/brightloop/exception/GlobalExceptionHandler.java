@@ -66,6 +66,26 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
     }
 
+    @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
+    public ResponseEntity<Map<String, Object>> handleDataIntegrityViolation(
+            org.springframework.dao.DataIntegrityViolationException ex,
+            HttpServletRequest request
+    ) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("timestamp", LocalDateTime.now());
+        body.put("status", HttpStatus.BAD_REQUEST.value());
+        body.put("error", "Bad Request");
+        String msg = "Data integrity constraint violation occurred (e.g., duplicate record or invalid reference)";
+        if (ex.getMessage() != null && ex.getMessage().contains("uq_invoice_subscription_period")) {
+            msg = "Duplicate billing error: An invoice already exists for this subscription and billing period.";
+        } else if (ex.getMessage() != null && ex.getMessage().contains("transaction_reference")) {
+            msg = "Duplicate payment error: A payment with this transaction reference already exists.";
+        }
+        body.put("message", msg);
+        body.put("path", request.getRequestURI());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGeneralException(
             Exception ex,

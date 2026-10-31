@@ -50,9 +50,41 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
             @Param("unsettledStatuses") Collection<InvoiceStatus> unsettledStatuses
     );
 
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT i FROM Invoice i WHERE i.id = :id")
+    Optional<Invoice> findByIdForUpdate(@Param("id") Long id);
+
     @Query("SELECT COALESCE(SUM(i.amountPaid), 0) FROM Invoice i")
     BigDecimal sumTotalRevenue();
 
+    @Query("SELECT COALESCE(SUM(i.amountPaid), 0) FROM Invoice i WHERE i.issueDate >= :start AND i.issueDate <= :end")
+    BigDecimal sumTotalRevenueBetween(@Param("start") LocalDate start, @Param("end") LocalDate end);
+
     @Query("SELECT COALESCE(SUM(i.amountDue), 0) FROM Invoice i WHERE i.status IN :unsettledStatuses")
     BigDecimal sumAmountOwed(@Param("unsettledStatuses") Collection<InvoiceStatus> unsettledStatuses);
+
+    @Query("SELECT COALESCE(SUM(i.amountDue), 0) FROM Invoice i WHERE i.status IN :unsettledStatuses AND i.issueDate >= :start AND i.issueDate <= :end")
+    BigDecimal sumAmountOwedBetween(
+            @Param("unsettledStatuses") Collection<InvoiceStatus> unsettledStatuses,
+            @Param("start") LocalDate start,
+            @Param("end") LocalDate end
+    );
+
+    @Query("SELECT COUNT(i) FROM Invoice i WHERE i.dueDate < :today AND i.status IN :unsettledStatuses AND i.issueDate >= :start AND i.issueDate <= :end")
+    long countOverdueBetween(
+            @Param("today") LocalDate today,
+            @Param("unsettledStatuses") Collection<InvoiceStatus> unsettledStatuses,
+            @Param("start") LocalDate start,
+            @Param("end") LocalDate end
+    );
+
+    @Query("SELECT COUNT(i) FROM Invoice i WHERE i.status = :status AND i.issueDate >= :start AND i.issueDate <= :end")
+    long countByStatusBetween(
+            @Param("status") InvoiceStatus status,
+            @Param("start") LocalDate start,
+            @Param("end") LocalDate end
+    );
+
+    @Query("SELECT COUNT(i) FROM Invoice i WHERE i.issueDate >= :start AND i.issueDate <= :end")
+    long countBetween(@Param("start") LocalDate start, @Param("end") LocalDate end);
 }

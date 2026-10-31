@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { Search, Plus, X, Trash2 } from "lucide-react";
+import { Search, Plus, X, Trash2, Tag } from "lucide-react";
 
 function Discounts() {
   const [discounts, setDiscounts] = useState([]);
@@ -44,11 +44,12 @@ function Discounts() {
   );
 
   return (
-    <div className="module-page">
-      <div className="module-header">
+    <section>
+      <div className="page-heading">
         <div>
-          <h2>Discounts</h2>
-          <p>Create and manage promotional discount codes.</p>
+          <p className="breadcrumb">Configuration / Discounts</p>
+          <h1>Discounts</h1>
+          <p className="subtitle">Create and manage promotional discount codes.</p>
         </div>
 
         <button className="primary-button" onClick={() => setShowForm(true)}>
@@ -56,8 +57,8 @@ function Discounts() {
         </button>
       </div>
 
-      <div className="module-toolbar">
-        <div className="search-box">
+      <div className="customer-toolbar">
+        <div className="customer-search">
           <Search size={17} />
           <input
             placeholder="Search discounts..."
@@ -65,125 +66,141 @@ function Discounts() {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
+        <span>{discounts.length} discounts</span>
       </div>
 
-      <div className="table-container">
-        <table>
-          <thead>
-            <tr>
-              <th>Discount Name</th>
-              <th>Coupon Code</th>
-              <th>Type</th>
-              <th>Value</th>
-              <th>Valid Until</th>
-              <th>Status</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {filteredDiscounts.length === 0 ? (
+      <div className="panel customer-table-panel">
+        <div className="table-scroll">
+          <table>
+            <thead>
               <tr>
-                <td colSpan="7" className="empty-table">
-                  No discounts found. Create your first discount.
-                </td>
+                <th>Discount Name</th>
+                <th>Coupon Code</th>
+                <th>Type</th>
+                <th>Value</th>
+                <th>Valid Until</th>
+                <th>Status</th>
+                <th>Action</th>
               </tr>
-            ) : (
-              filteredDiscounts.map((item) => (
-                <tr key={item.id}>
-                  <td>{item.name}</td>
-                  <td><strong>{item.code}</strong></td>
-                  <td>{item.type === "PERCENTAGE" ? "Percentage" : "Fixed amount"}</td>
-                  <td>
-                    {item.type === "PERCENTAGE" ? `${item.value}%` : `₹${item.value}`}
-                  </td>
-                  <td>{item.validUntil || "No expiry"}</td>
-                  <td>
-                    <span className="customer-status">{item.status}</span>
-                  </td>
-                  <td>
-                    <button
-                      className="delete-button"
-                      onClick={() => deleteDiscount(item.id)}
-                      title="Delete discount"
-                    >
-                      <Trash2 size={16} />
-                    </button>
+            </thead>
+
+            <tbody>
+              {filteredDiscounts.length === 0 ? (
+                <tr>
+                  <td colSpan="7" className="table-empty">
+                    <Tag size={28} />
+                    <strong>No discounts found</strong>
+                    <p>Create your first discount to get started.</p>
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : (
+                filteredDiscounts.map((item) => (
+                  <tr key={item.id}>
+                    <td>{item.name}</td>
+                    <td><strong>{item.code}</strong></td>
+                    <td>{item.type === "PERCENTAGE" ? "Percentage" : "Fixed amount"}</td>
+                    <td>
+                      {item.type === "PERCENTAGE" ? `${item.value}%` : `₹${item.value}`}
+                    </td>
+                    <td>{item.validUntil || "No expiry"}</td>
+                    <td>
+                      <span className="customer-status">{item.status}</span>
+                    </td>
+                    <td>
+                      <button
+                        className="icon-button"
+                        onClick={() => deleteDiscount(item.id)}
+                        title="Delete"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {showForm && (
-        <div className="modal-overlay">
+        <div className="customer-modal-overlay">
           <div className="customer-modal">
-            <div className="modal-header">
+            <div className="customer-modal-header">
               <div>
-                <h3>Create Discount</h3>
+                <h2>Create Discount</h2>
                 <p>Enter the promotional offer details.</p>
               </div>
               <button
-                className="close-button"
+                className="icon-button"
                 onClick={() => setShowForm(false)}
+                aria-label="Close"
               >
-                <X size={20} />
+                <X size={19} />
               </button>
             </div>
 
             <form onSubmit={addDiscount}>
-              <label>Discount Name</label>
-              <input
-                required
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                placeholder="Example: Festival Offer"
-              />
+              <label>
+                Discount Name
+                <input
+                  required
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  placeholder="Example: Festival Offer"
+                />
+              </label>
 
-              <label>Coupon Code</label>
-              <input
-                required
-                value={form.code}
-                onChange={(e) =>
-                  setForm({ ...form, code: e.target.value.toUpperCase() })
-                }
-                placeholder="Example: FESTIVE20"
-              />
+              <label>
+                Coupon Code
+                <input
+                  required
+                  value={form.code}
+                  onChange={(e) =>
+                    setForm({ ...form, code: e.target.value.toUpperCase() })
+                  }
+                  placeholder="Example: FESTIVE20"
+                />
+              </label>
 
-              <label>Discount Type</label>
-              <select
-                value={form.type}
-                onChange={(e) => setForm({ ...form, type: e.target.value })}
-              >
-                <option value="PERCENTAGE">Percentage (%)</option>
-                <option value="FIXED">Fixed Amount (₹)</option>
-              </select>
+              <label>
+                Discount Type
+                <select
+                  value={form.type}
+                  onChange={(e) => setForm({ ...form, type: e.target.value })}
+                >
+                  <option value="PERCENTAGE">Percentage (%)</option>
+                  <option value="FIXED">Fixed Amount (₹)</option>
+                </select>
+              </label>
 
-              <label>Discount Value</label>
-              <input
-                required
-                type="number"
-                min="0.01"
-                step="0.01"
-                max={form.type === "PERCENTAGE" ? "100" : undefined}
-                value={form.value}
-                onChange={(e) => setForm({ ...form, value: e.target.value })}
-                placeholder={form.type === "PERCENTAGE" ? "Example: 20" : "Example: 200"}
-              />
+              <label>
+                Discount Value
+                <input
+                  required
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  max={form.type === "PERCENTAGE" ? "100" : undefined}
+                  value={form.value}
+                  onChange={(e) => setForm({ ...form, value: e.target.value })}
+                  placeholder={form.type === "PERCENTAGE" ? "Example: 20" : "Example: 200"}
+                />
+              </label>
 
-              <label>Valid Until</label>
-              <input
-                type="date"
-                value={form.validUntil}
-                onChange={(e) => setForm({ ...form, validUntil: e.target.value })}
-              />
+              <label>
+                Valid Until
+                <input
+                  type="date"
+                  value={form.validUntil}
+                  onChange={(e) => setForm({ ...form, validUntil: e.target.value })}
+                />
+              </label>
 
-              <div className="modal-actions">
+              <div className="customer-modal-actions">
                 <button
                   type="button"
-                  className="cancel-button"
+                  className="select-button"
                   onClick={() => setShowForm(false)}
                 >
                   Cancel
@@ -196,7 +213,7 @@ function Discounts() {
           </div>
         </div>
       )}
-    </div>
+    </section>
   );
 }
 

@@ -30,6 +30,8 @@ import java.util.stream.Collectors;
 public class QuotationTemplateController {
 
     private final QuotationTemplateRepository templateRepository;
+    private final com.brightloop.repository.SubscriptionRepository subscriptionRepository;
+    private final com.brightloop.service.SubscriptionService subscriptionService;
 
     @PostMapping
     public ResponseEntity<QuotationTemplateDto> createTemplate(@Valid @RequestBody QuotationTemplateDto dto) {
@@ -39,6 +41,7 @@ public class QuotationTemplateController {
                 .recurringInterval(dto.getRecurringInterval())
                 .duration(dto.getDuration())
                 .durationUnit(dto.getDurationUnit())
+                .validityDays(dto.getValidityDays() != null ? dto.getValidityDays() : 30)
                 .autoClose(dto.getAutoClose() != null ? dto.getAutoClose() : false)
                 .active(dto.getActive() != null ? dto.getActive() : true)
                 .termsAndConditions(dto.getTermsAndConditions())
@@ -55,6 +58,7 @@ public class QuotationTemplateController {
                         .quantity(lineDto.getQuantity())
                         .unitPrice(lineDto.getUnitPrice())
                         .discount(lineDto.getDiscount())
+                        .taxRate(lineDto.getTaxRate() != null ? lineDto.getTaxRate() : java.math.BigDecimal.ZERO)
                         .sequence(lineDto.getSequence())
                         .build();
                 template.addLine(line);
@@ -93,6 +97,7 @@ public class QuotationTemplateController {
         template.setRecurringInterval(dto.getRecurringInterval());
         template.setDuration(dto.getDuration());
         template.setDurationUnit(dto.getDurationUnit());
+        if (dto.getValidityDays() != null) template.setValidityDays(dto.getValidityDays());
         if (dto.getAutoClose() != null) template.setAutoClose(dto.getAutoClose());
         if (dto.getActive() != null) template.setActive(dto.getActive());
         template.setTermsAndConditions(dto.getTermsAndConditions());
@@ -108,6 +113,7 @@ public class QuotationTemplateController {
                         .quantity(lineDto.getQuantity())
                         .unitPrice(lineDto.getUnitPrice())
                         .discount(lineDto.getDiscount())
+                        .taxRate(lineDto.getTaxRate() != null ? lineDto.getTaxRate() : java.math.BigDecimal.ZERO)
                         .sequence(lineDto.getSequence())
                         .build();
                 template.addLine(line);
@@ -123,8 +129,21 @@ public class QuotationTemplateController {
         if (!templateRepository.existsById(id)) {
             throw new ResourceNotFoundException("QuotationTemplate", "id", id);
         }
+        if (subscriptionRepository.existsByQuotationTemplateId(id)) {
+            throw new com.brightloop.exception.BusinessValidationException(
+                    "Cannot delete quotation template ID " + id + " because it is currently linked to existing subscriptions."
+            );
+        }
         templateRepository.deleteById(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{id}/generate-quotation")
+    public ResponseEntity<com.brightloop.dto.SubscriptionResponse> generateQuotation(
+            @PathVariable Long id,
+            @Valid @RequestBody com.brightloop.dto.QuotationGenerateRequest request
+    ) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(subscriptionService.generateQuotation(id, request));
     }
 
     private QuotationTemplateDto mapToDto(QuotationTemplate entity) {
@@ -137,6 +156,7 @@ public class QuotationTemplateController {
                         .quantity(line.getQuantity())
                         .unitPrice(line.getUnitPrice())
                         .discount(line.getDiscount())
+                        .taxRate(line.getTaxRate())
                         .subtotal(line.getSubtotal())
                         .sequence(line.getSequence())
                         .build())
@@ -149,6 +169,7 @@ public class QuotationTemplateController {
                 .recurringInterval(entity.getRecurringInterval())
                 .duration(entity.getDuration())
                 .durationUnit(entity.getDurationUnit())
+                .validityDays(entity.getValidityDays())
                 .autoClose(entity.getAutoClose())
                 .active(entity.getActive())
                 .termsAndConditions(entity.getTermsAndConditions())

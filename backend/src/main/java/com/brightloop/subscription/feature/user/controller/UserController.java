@@ -75,10 +75,10 @@ public class UserController {
     }
 
     /**
-     * POST /api/users — create an INTERNAL or ADMIN staff account.
+     * POST /api/users or /api/users/staff — create an INTERNAL or ADMIN staff account.
      * Cannot create CUSTOMER accounts here — use /api/auth/signup.
      */
-    @PostMapping
+    @PostMapping({"", "/staff"})
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Create a new staff account (INTERNAL or ADMIN role only)")
@@ -88,14 +88,16 @@ public class UserController {
 
     /**
      * PUT /api/users/{id} — update fullName and active status.
+     * Admins cannot deactivate their own account.
      */
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Update a user's name and active status")
+    @Operation(summary = "Update a user's name and active status (admin cannot deactivate self)")
     public UserResponse updateUser(
             @PathVariable Long id,
-            @Valid @RequestBody UpdateUserRequest request) {
-        return userService.updateUser(id, request);
+            @Valid @RequestBody UpdateUserRequest request,
+            @AuthenticationPrincipal CustomUserDetails currentUser) {
+        return userService.updateUser(id, request, currentUser.getUserId());
     }
 
     /**

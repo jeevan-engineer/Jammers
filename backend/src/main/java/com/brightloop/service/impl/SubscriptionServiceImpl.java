@@ -73,6 +73,11 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 
         String generatedSubNumber = "SUB-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
 
+        LocalDate quoteValidUntil = request.getQuoteValidUntil();
+        if (quoteValidUntil == null && template != null && request.getStatus() == SubscriptionStatus.QUOTATION) {
+            quoteValidUntil = start.plusDays(template.getValidityDays() != null ? template.getValidityDays() : 30);
+        }
+
         Subscription subscription = Subscription.builder()
                 .subscriptionNumber(generatedSubNumber)
                 .customerId(request.getCustomerId())
@@ -90,6 +95,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
                 .currentPeriodStart(start)
                 .currentPeriodEnd(periodEnd)
                 .nextBillingDate(periodEnd)
+                .quoteValidUntil(quoteValidUntil)
                 .currency(request.getCurrency() != null ? request.getCurrency() : "USD")
                 .autoRenew(request.getAutoRenew() != null ? request.getAutoRenew() : true)
                 .terms(request.getTerms())
@@ -179,6 +185,16 @@ public class SubscriptionServiceImpl implements SubscriptionService {
             );
         }
 
+        // Validate Quotation Expiry: Prevent invalid or expired quotations from being confirmed
+        if (current == SubscriptionStatus.QUOTATION && target == SubscriptionStatus.CONFIRMED) {
+            if (subscription.getQuoteValidUntil() != null && subscription.getQuoteValidUntil().isBefore(LocalDate.now())) {
+                throw new BusinessValidationException(
+                        String.format("Cannot confirm quotation %s: Proposal expired on %s",
+                                subscription.getSubscriptionNumber(), subscription.getQuoteValidUntil())
+                );
+            }
+        }
+
         subscription.addStatusHistory(
                 target,
                 request.getChangedBy() != null ? request.getChangedBy() : "USER",
@@ -203,6 +219,263 @@ public class SubscriptionServiceImpl implements SubscriptionService {
                 .reason(reason)
                 .comment("Subscription closed by user or administrative action")
                 .build());
+    }
+
+    @Override
+    public SubscriptionResponse generateQuotation(Long templateId, com.brightloop.dto.QuotationGenerateRequest request) {
+        log.info("Generating formal quotation for customer ID {} from template ID {}", request.getCustomerId(), templateId);
+
+        QuotationTemplate template = quotationTemplateRepository.findById(templateId)
+                .orElseThrow(() -> new ResourceNotFoundException("QuotationTemplate", "id", templateId));
+
+        if (template.getActive() != null && !template.getActive()) {
+            throw new BusinessValidationException("Cannot generate quotation from an inactive template: " + template.getName());
+        }
+
+        LocalDate start = request.getStartDate() != null ? request.getStartDate() : LocalDate.now();
+        int validity = request.getValidityDays() != null ? request.getValidityDays() :
+                (template.getValidityDays() != null ? template.getValidityDays() : 30);
+        LocalDate quoteValidUntil = start.plusDays(validity);
+
+        String interval = template.getRecurringInterval() != null ? template.getRecurringInterval() : "MONTHLY";
+        int duration = template.getDuration() != null ? template.getDuration() : 12;
+        LocalDate periodEnd = calculatePeriodEnd(start, interval, 1);
+        LocalDate endDate = calculatePeriodEnd(start, interval, duration);
+
+        String generatedSubNumber = "SUB-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+
+        Subscription subscription = Subscription.builder()
+                .subscriptionNumber(generatedSubNumber)
+                .customerId(request.getCustomerId())
+                .customerName(request.getCustomerName())
+                .customerEmail(request.getCustomerEmail())
+                .quotationTemplate(template)
+                .status(SubscriptionStatus.QUOTATION)
+                .billingInterval(interval)
+                .intervalCount(1)
+                .startDate(start)
+                .endDate(endDate)
+                .currentPeriodStart(start)
+                .currentPeriodEnd(periodEnd)
+                .nextBillingDate(periodEnd)
+                .quoteValidUntil(quoteValidUntil)
+                .currency(request.getCurrency() != null ? request.getCurrency() : "USD")
+                .autoRenew(true)
+                .terms(template.getTermsAndConditions())
+                .notes(request.getNotes() != null ? request.getNotes() : template.getNotes())
+                .lines(new ArrayList<>())
+                .statusHistories(new ArrayList<>())
+                .build();
+
+        for (com.brightloop.entity.QuotationTemplateLine tplLine : template.getLines()) {
+            SubscriptionLine line = SubscriptionLine.builder()
+                    .subscription(subscription)
+                    .productId(tplLine.getProductId())
+                    .productName(tplLine.getProductName())
+                    .description(tplLine.getDescription())
+                    .quantity(tplLine.getQuantity() != null ? tplLine.getQuantity() : BigDecimal.ONE)
+                    .unitPrice(tplLine.getUnitPrice() != null ? tplLine.getUnitPrice() : BigDecimal.ZERO)
+                    .discount(tplLine.getDiscount() != null ? tplLine.getDiscount() : BigDecimal.ZERO)
+                    .taxRate(tplLine.getTaxRate() != null ? tplLine.getTaxRate() : BigDecimal.ZERO)
+                    .build();
+            subscription.addLine(line);
+        }
+
+        subscription.addStatusHistory(
+                SubscriptionStatus.QUOTATION,
+                "SALES",
+                "Quotation generated from template",
+                "Generated proposal from template '" + template.getName() + "' valid until " + quoteValidUntil
+        );
+
+        Subscription saved = subscriptionRepository.save(subscription);
+        log.info("Quotation created successfully: {}", saved.getSubscriptionNumber());
+        return mapToResponse(saved);
+    }
+
+    @Override
+    public SubscriptionResponse pauseSubscription(Long id, String reason) {
+        Subscription subscription = subscriptionRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Subscription", "id", id));
+
+        if (subscription.getStatus() != SubscriptionStatus.ACTIVE) {
+            throw new BusinessValidationException(
+                    "Only ACTIVE subscriptions can be paused. Current status is " + subscription.getStatus()
+            );
+        }
+
+        if (subscription.getPausedAt() != null) {
+            throw new BusinessValidationException("Subscription " + subscription.getSubscriptionNumber() + " is already paused.");
+        }
+
+        subscription.setPausedAt(LocalDateTime.now());
+        subscription.addStatusHistory(
+                SubscriptionStatus.ACTIVE,
+                "USER",
+                reason != null ? reason : "Subscription paused",
+                "Subscription billing and service temporarily paused"
+        );
+
+        Subscription updated = subscriptionRepository.save(subscription);
+        log.info("Subscription {} has been paused", updated.getSubscriptionNumber());
+        return mapToResponse(updated);
+    }
+
+    @Override
+    public SubscriptionResponse resumeSubscription(Long id) {
+        Subscription subscription = subscriptionRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Subscription", "id", id));
+
+        if (subscription.getPausedAt() == null) {
+            throw new BusinessValidationException("Subscription " + subscription.getSubscriptionNumber() + " is not currently paused.");
+        }
+
+        subscription.setPausedAt(null);
+        subscription.addStatusHistory(
+                SubscriptionStatus.ACTIVE,
+                "USER",
+                "Resumed",
+                "Subscription resumed from paused state"
+        );
+
+        Subscription updated = subscriptionRepository.save(subscription);
+        log.info("Subscription {} resumed successfully", updated.getSubscriptionNumber());
+        return mapToResponse(updated);
+    }
+
+    @Override
+    public SubscriptionResponse renewSubscription(Long id, com.brightloop.dto.SubscriptionRenewalRequest request) {
+        Subscription subscription = subscriptionRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Subscription", "id", id));
+
+        if (subscription.getStatus() != SubscriptionStatus.ACTIVE && subscription.getStatus() != SubscriptionStatus.CLOSED) {
+            throw new BusinessValidationException(
+                    "Cannot renew subscription in " + subscription.getStatus() + " status. Only ACTIVE or CLOSED contracts can be renewed."
+            );
+        }
+
+        LocalDate currentEnd = subscription.getEndDate() != null ? subscription.getEndDate() : subscription.getCurrentPeriodEnd();
+        LocalDate newEnd;
+
+        if (request != null && request.getNewEndDate() != null) {
+            newEnd = request.getNewEndDate();
+            if (!newEnd.isAfter(currentEnd)) {
+                throw new BusinessValidationException("Renewal end date (" + newEnd + ") must be after current contract end date (" + currentEnd + ").");
+            }
+        } else {
+            int duration = (request != null && request.getDuration() != null) ? request.getDuration() : subscription.getIntervalCount();
+            String unit = (request != null && request.getDurationUnit() != null) ? request.getDurationUnit() : subscription.getBillingInterval();
+            newEnd = calculatePeriodEnd(currentEnd, unit, duration);
+        }
+
+        // Prevent duplicate renewals (e.g. extending beyond 10 years in the future)
+        if (newEnd.isAfter(LocalDate.now().plusYears(10))) {
+            throw new BusinessValidationException("Duplicate or invalid renewal: Contract end date cannot exceed 10 years from today.");
+        }
+
+        subscription.setEndDate(newEnd);
+        if (request != null && request.getAutoRenew() != null) {
+            subscription.setAutoRenew(request.getAutoRenew());
+        }
+
+        if (subscription.getStatus() == SubscriptionStatus.CLOSED) {
+            subscription.setStatus(SubscriptionStatus.ACTIVE);
+            subscription.setCancelledAt(null);
+            subscription.setCancellationReason(null);
+            subscription.setCurrentPeriodStart(LocalDate.now());
+            subscription.setCurrentPeriodEnd(calculatePeriodEnd(LocalDate.now(), subscription.getBillingInterval(), subscription.getIntervalCount()));
+            subscription.setNextBillingDate(subscription.getCurrentPeriodEnd());
+        }
+
+        subscription.addStatusHistory(
+                SubscriptionStatus.ACTIVE,
+                "USER",
+                request != null && request.getNotes() != null ? request.getNotes() : "Subscription renewal",
+                "Contract renewed until " + newEnd
+        );
+
+        Subscription updated = subscriptionRepository.save(subscription);
+        log.info("Subscription {} renewed successfully through {}", updated.getSubscriptionNumber(), newEnd);
+        return mapToResponse(updated);
+    }
+
+    @Override
+    public Long generateSingleInvoice(Long id) {
+        Subscription sub = subscriptionRepository.findByIdForUpdate(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Subscription", "id", id));
+
+        if (sub.getStatus() != SubscriptionStatus.ACTIVE) {
+            throw new BusinessValidationException("Cannot generate invoice: Subscription " + sub.getSubscriptionNumber() + " is in " + sub.getStatus() + " state.");
+        }
+
+        if (sub.getPausedAt() != null) {
+            throw new BusinessValidationException("Cannot generate invoice: Subscription " + sub.getSubscriptionNumber() + " is currently PAUSED.");
+        }
+
+        // If today has reached or passed current period end, roll over to the new period
+        LocalDate periodStart = sub.getCurrentPeriodStart();
+        LocalDate periodEnd = sub.getCurrentPeriodEnd();
+
+        if (sub.getNextBillingDate() != null && !sub.getNextBillingDate().isAfter(LocalDate.now()) && !LocalDate.now().isBefore(periodEnd)) {
+            periodStart = periodEnd;
+            periodEnd = calculatePeriodEnd(periodStart, sub.getBillingInterval(), sub.getIntervalCount());
+            sub.setCurrentPeriodStart(periodStart);
+            sub.setCurrentPeriodEnd(periodEnd);
+        }
+
+        boolean alreadyBilled = invoiceRepository.existsBySubscriptionIdAndBillingPeriodStartAndBillingPeriodEnd(
+                sub.getId(), periodStart, periodEnd
+        );
+
+        if (alreadyBilled) {
+            throw new BusinessValidationException(
+                    String.format("Duplicate billing guard: An invoice already exists for subscription %s in billing period [%s to %s]",
+                            sub.getSubscriptionNumber(), periodStart, periodEnd)
+            );
+        }
+
+        LocalDate today = LocalDate.now();
+        String invoiceNumber = "INV-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+
+        Invoice invoice = Invoice.builder()
+                .invoiceNumber(invoiceNumber)
+                .subscription(sub)
+                .customerId(sub.getCustomerId())
+                .customerName(sub.getCustomerName())
+                .customerEmail(sub.getCustomerEmail())
+                .billingPeriodStart(periodStart)
+                .billingPeriodEnd(periodEnd)
+                .status(InvoiceStatus.UNPAID)
+                .issueDate(today)
+                .dueDate(today.plusDays(15))
+                .currency(sub.getCurrency())
+                .notes("Single recurring invoice for subscription " + sub.getSubscriptionNumber())
+                .lines(new ArrayList<>())
+                .build();
+
+        for (SubscriptionLine subLine : sub.getLines()) {
+            InvoiceLine invLine = InvoiceLine.builder()
+                    .invoice(invoice)
+                    .productId(subLine.getProductId())
+                    .productName(subLine.getProductName())
+                    .description(subLine.getDescription())
+                    .quantity(subLine.getQuantity())
+                    .unitPrice(subLine.getUnitPrice())
+                    .discount(subLine.getDiscount())
+                    .taxRate(subLine.getTaxRate())
+                    .build();
+            invoice.addLine(invLine);
+        }
+
+        Invoice saved = invoiceRepository.save(invoice);
+
+        // Update next billing date to the end of the invoiced period
+        LocalDate nextBilling = calculatePeriodEnd(periodEnd, sub.getBillingInterval(), sub.getIntervalCount());
+        sub.setNextBillingDate(periodEnd);
+        subscriptionRepository.save(sub);
+
+        log.info("Single invoice {} generated for subscription {}", saved.getInvoiceNumber(), sub.getSubscriptionNumber());
+        return saved.getId();
     }
 
     @Override
@@ -341,6 +614,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
                 .cancelledAt(subscription.getCancelledAt())
                 .cancellationReason(subscription.getCancellationReason())
                 .pausedAt(subscription.getPausedAt())
+                .quoteValidUntil(subscription.getQuoteValidUntil())
                 .subtotal(subscription.getSubtotal())
                 .taxAmount(subscription.getTaxAmount())
                 .discountAmount(subscription.getDiscountAmount())

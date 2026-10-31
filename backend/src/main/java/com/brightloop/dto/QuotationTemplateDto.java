@@ -34,12 +34,17 @@ public class QuotationTemplateDto {
     private String recurringInterval = "MONTHLY";
 
     @NotNull(message = "Duration is required")
+    @jakarta.validation.constraints.Min(value = 1, message = "Duration must be at least 1")
     @Builder.Default
     private Integer duration = 12;
 
     @NotBlank(message = "Duration unit is required")
     @Builder.Default
     private String durationUnit = "MONTHS";
+
+    @jakarta.validation.constraints.Min(value = 1, message = "Validity days must be at least 1")
+    @Builder.Default
+    private Integer validityDays = 30;
 
     @Builder.Default
     private Boolean autoClose = false;
@@ -71,14 +76,24 @@ public class QuotationTemplateDto {
 
         private String description;
 
+        @jakarta.validation.constraints.NotNull(message = "Quantity is required")
+        @jakarta.validation.constraints.DecimalMin(value = "0.01", message = "Quantity must be greater than zero")
         @Builder.Default
         private BigDecimal quantity = BigDecimal.ONE;
 
+        @jakarta.validation.constraints.NotNull(message = "Unit price is required")
+        @jakarta.validation.constraints.DecimalMin(value = "0.00", message = "Unit price cannot be negative")
         @Builder.Default
         private BigDecimal unitPrice = BigDecimal.ZERO;
 
+        @jakarta.validation.constraints.DecimalMin(value = "0.00", message = "Discount cannot be negative")
+        @jakarta.validation.constraints.DecimalMax(value = "100.00", message = "Discount cannot exceed 100%")
         @Builder.Default
         private BigDecimal discount = BigDecimal.ZERO;
+
+        @jakarta.validation.constraints.DecimalMin(value = "0.00", message = "Tax rate cannot be negative")
+        @Builder.Default
+        private BigDecimal taxRate = BigDecimal.ZERO;
 
         @Builder.Default
         private BigDecimal subtotal = BigDecimal.ZERO;

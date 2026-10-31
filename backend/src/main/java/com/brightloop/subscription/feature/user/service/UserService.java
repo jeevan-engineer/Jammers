@@ -16,7 +16,11 @@ public interface UserService {
 
     UserResponse createStaff(CreateStaffRequest request);
 
-    UserResponse updateUser(Long id, UpdateUserRequest request);
+    /**
+     * Updates a user's name and active status.
+     * @param requestingUserId the ID of the admin making the request (for self-protection against deactivation)
+     */
+    UserResponse updateUser(Long id, UpdateUserRequest request, Long requestingUserId);
 
     /**
      * Updates the role of a user.
